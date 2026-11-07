@@ -151,6 +151,8 @@
   body:not(.touch).menu #touch{display:none}
   body:not(.touch) #tQ{left:calc(50% + 150px);bottom:14px}body:not(.touch) #tE{left:calc(50% + 208px);bottom:14px}body:not(.touch) #tC{left:calc(50% + 266px);bottom:14px}body:not(.touch) #tX{left:calc(50% + 330px);bottom:8px}
   body:not(.touch) #abar{left:calc(50% - 40px)}
+  body.touch #tSkip{right:calc(214px + env(safe-area-inset-right));bottom:164px;width:52px;height:52px;font-size:11px;border-color:#9fb3d1;color:#9fb3d1;display:none}
+  body:not(.touch) #tSkip{display:none !important}
   body.touch #tUse{right:calc(214px + env(safe-area-inset-right));bottom:96px;width:58px;height:58px;font-size:13px;border-color:#ffe14d;color:#ffe14d;display:none}
   #prompt{position:absolute;left:0;right:0;top:62%;text-align:center;font:800 15px system-ui,sans-serif;letter-spacing:.14em;color:#ffe14d;text-shadow:0 0 10px rgba(0,0,0,.8),0 1px 3px #000;opacity:0;transition:opacity .15s}
   body.touch #prompt{top:56%;font-size:13px}
@@ -268,6 +270,7 @@
   <div class="tbtn" id="tReload">R</div>
   <div class="tbtn" id="tPause">II</div>
   <div class="tbtn" id="tUse">USE</div>
+  <div class="tbtn" id="tSkip">SKIP</div>
   <div class="tbtn sk" id="tQ"><b>Q</b><small>STUN</small></div>
   <div class="tbtn sk" id="tE"><b>E</b><small>FREEZE</small></div>
   <div class="tbtn sk" id="tC"><b>C</b><small>FLASH</small></div>
@@ -290,6 +293,7 @@
     <kbd>R</kbd><span>Reload</span>
     <kbd>F</kbd><span>Inspect weapon</span>
     <kbd>F (at chest)</kbd><span>Roll the weapon chest / take the weapon</span>
+    <kbd>G (at chest)</kbd><span>Skip the offered weapon (keep yours, half refund)</span>
     <kbd>Q E C</kbd><span>Stun · Freeze · Flash grenades</span>
     <kbd>X</kbd><span>Ultimate: rocket launcher (each kill +20%)</span>
     <kbd>Esc / P</kbd><span>Pause</span>
@@ -1954,6 +1958,7 @@ let rayTargets = solids.slice();
 function rebuildTargets() {
   rayTargets = solids.slice();
   for (const e of enemies) if (e.active && e.alive) for (const p of e.hitParts) rayTargets.push(p);
+  if (typeof boss !== 'undefined' && boss.active && boss.alive) for (const p of boss.hitParts) rayTargets.push(p);
   if (typeof avatars !== 'undefined' && sk.mode === 'duel') for (const av of avatars.values()) if (!av.down) for (const p of av.hit) rayTargets.push(p);
 }
 function makeEnemy() {
@@ -3645,6 +3650,7 @@ function onTouchStart(e) {
     else if (id === 'tJump') { touchJump = true; jumpId = t.identifier; b.classList.add('down'); }
     else if (id === 'tReload') { reload(); b.classList.add('down'); setTimeout(() => b.classList.remove('down'), 150); }
     else if (id === 'tPause') { pause(); }
+    else if (id === 'tSkip') { declineChest(); b.classList.add('down'); setTimeout(() => b.classList.remove('down'), 150); }
     else if (id === 'tUse') { useChest(); b.classList.add('down'); setTimeout(() => b.classList.remove('down'), 150); }
     else if (id === 'tQ') throwSkill('stun'); else if (id === 'tE') throwSkill('freeze'); else if (id === 'tC') throwSkill('flash');
     else if (id === 'tX') activateUlt();
@@ -3686,7 +3692,7 @@ function resetTouch() {
   stickEl.classList.remove('on'); document.querySelectorAll('.tbtn').forEach(b => b.classList.remove('down', 'on'));
 }
 // ---------- touch layout editor ----------
-const EDIT_IDS = ['tFire', 'tAim', 'tJump', 'tReload', 'tPause', 'tUse', 'tQ', 'tE', 'tC', 'tX'];
+const EDIT_IDS = ['tFire', 'tAim', 'tJump', 'tReload', 'tPause', 'tUse', 'tSkip', 'tQ', 'tE', 'tC', 'tX'];
 let layout = {}; try { layout = JSON.parse(localStorage.getItem('arena-layout') || '{}') || {}; } catch (e) { layout = {}; }
 let editing = false, editSel = null, dragId = null;
 function placeBtn(id) {
@@ -3705,7 +3711,7 @@ function selectBtn(id) {
   $('ebSize').value = id && layout[id] ? layout[id].s || 1 : 1;
 }
 function startEditing() { editing = true; document.body.classList.add('editing'); overlay.style.display = 'none'; selectBtn(null); }
-function stopEditing() { editing = false; document.body.classList.remove('editing'); document.querySelectorAll('.tbtn').forEach(b => b.classList.remove('sel')); overlay.style.display = 'flex'; $('tUse')._s = undefined; }
+function stopEditing() { editing = false; document.body.classList.remove('editing'); document.querySelectorAll('.tbtn').forEach(b => b.classList.remove('sel')); overlay.style.display = 'flex'; $('tUse')._s = undefined; $('tSkip')._s = undefined; }
 if (isTouch) $('editCtl').style.display = '';
 $('editCtl').addEventListener('click', e => { e.stopPropagation(); startEditing(); });
 $('ebDone').addEventListener('click', e => { e.stopPropagation(); stopEditing(); });
@@ -3750,6 +3756,7 @@ addEventListener('keydown', e => {
     if (e.code === 'KeyX' || e.code === 'Digit5') activateUlt();
   }
   if (e.code === 'KeyF' && state === 'play') { if (!useChest()) startInspect(); }
+  if (e.code === 'KeyG' && state === 'play') declineChest();
   if (e.code === 'KeyP' || (e.code === 'Escape' && fallback)) pause();
 });
 addEventListener('keyup', e => { keys[e.code] = false; });
@@ -5283,9 +5290,16 @@ function useChest() {
   if (chestCD > 0) { showSub('CHEST RECHARGING · ' + Math.ceil(chestCD) + 's', '#ffb347'); sfx.empty(); return true; }
   const price = chestPrice();
   if (credits < price) { showSub('NEED ' + price + ' CREDITS', '#ff6b6b'); sfx.empty(); return true; }
-  credits -= price; chest.state = 'roll'; chest.t = 0; chest.pick = rollPick(); chest.tick = 0;
+  credits -= price; chest.paid = price; chest.state = 'roll'; chest.t = 0; chest.pick = rollPick(); chest.tick = 0;
   if (isDuel()) chestCD = 20;
   sfx.chestOpen(); return true;
+}
+function declineChest() {
+  if (state !== 'play' || chest.state !== 'offer' || !nearChest()) return false;
+  chest.state = 'close'; chest.t = 0.6;
+  const back = Math.floor((chest.paid || 0) / 2); credits += back;
+  showSub('KEPT ' + WEAP[cur].name + (back ? '  ·  +' + back + ' REFUND' : ''), '#9fb3d1'); sfx.swap();
+  return true;
 }
 function takeWeapon(w) {
   if (cur === 'rocket') { prevWeapon = w; ammoStore[w] = WEAP[w].mag; showSub('NEW WEAPON AFTER ULT: ' + WEAP[w].name, WCOL[w]); return; }
@@ -5308,7 +5322,7 @@ function updateChest(dt) {
     if (chest.t >= 2.2) { chest.state = 'offer'; chest.t = 8; sfx.chestDing(); }
   } else if (chest.state === 'offer') {
     open = 1; chest.t -= dt;
-    drawHolo(WEAP[chest.pick].name, (isTouch ? 'TAP USE' : 'PRESS F') + ' TO TAKE · ' + Math.ceil(chest.t) + 's', WCOL[chest.pick]);
+    drawHolo(WEAP[chest.pick].name, (isTouch ? 'USE TAKE · SKIP KEEP' : 'F TAKE · G KEEP') + ' · ' + Math.ceil(chest.t) + 's', WCOL[chest.pick]);
     if (chest.t <= 0) { chest.state = 'close'; chest.t = 0.6; }
   } else if (chest.state === 'close') {
     chest.t -= dt; open = Math.max(0, chest.t / 0.6); if (chest.t <= 0) chest.state = 'idle';
@@ -5326,12 +5340,14 @@ function updateChest(dt) {
   let txt = '';
   if (near) {
     const k = isTouch ? 'USE' : 'F';
-    if (chest.state === 'offer') txt = k + '  ·  TAKE ' + WEAP[chest.pick].name;
+    if (chest.state === 'offer') txt = k + '  ·  TAKE ' + WEAP[chest.pick].name + '     ' + (isTouch ? 'SKIP' : 'G') + '  ·  KEEP ' + WEAP[cur === 'rocket' ? prevWeapon : cur].name;
     else if (chest.state === 'idle') txt = chestCD > 0 ? 'CHEST RECHARGING ' + Math.ceil(chestCD) + 's' : k + '  ·  ROLL WEAPON' + (chestPrice() ? ' (' + chestPrice() + ')' : '');
   }
   const pe = $('prompt'); if (pe._t !== txt) { pe._t = txt; pe.textContent = txt; pe.style.opacity = txt ? 1 : 0; }
   const ub = $('tUse'); const show = near && (chest.state === 'idle' || chest.state === 'offer');
   if (ub._s !== show) { ub._s = show; ub.style.display = show ? 'flex' : 'none'; }
+  const sb = $('tSkip'), showS = near && chest.state === 'offer';
+  if (sb._s !== showS) { sb._s = showS; sb.style.display = showS ? 'flex' : 'none'; }
 }
 
 
