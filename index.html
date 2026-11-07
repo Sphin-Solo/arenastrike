@@ -605,8 +605,8 @@ function insideSolid(x, y, z) {
 
 // ---------- Viewmodel: "VX-9 Afterglow" energy rifle (original design) ----------
 const gunScene = new THREE.Scene();
-gunScene.add(new THREE.HemisphereLight(0xcfe0ff, 0x202030, 0.55));
-const gunSun = new THREE.DirectionalLight(0xffffff, 0.9); gunSun.position.set(1, 2, 1.5); gunScene.add(gunSun);
+gunScene.add(new THREE.HemisphereLight(0xcfe0ff, 0x202030, 0.4));
+const gunSun = new THREE.DirectionalLight(0xfff2e0, 0.65); gunSun.position.set(1, 2, 1.5); gunScene.add(gunSun);
 const gunRimC = new THREE.DirectionalLight(0x22e8ff, 0.55); gunRimC.position.set(-2, 0.6, -1); gunScene.add(gunRimC);
 const gunRimM = new THREE.DirectionalLight(0xff2bd6, 0.35); gunRimM.position.set(2, -0.5, -1.5); gunScene.add(gunRimM);
 const gunFlashLight = new THREE.PointLight(0x7ff4ff, 0, 2.2, 2); gunScene.add(gunFlashLight);
