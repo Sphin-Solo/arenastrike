@@ -104,7 +104,11 @@
   body.touch #bl{left:50%;bottom:auto;top:12px;width:200px;margin-left:-100px}
   body.touch #fps{right:auto;left:calc(20px + env(safe-area-inset-left));top:auto;bottom:6px}
   body.touch #tl{left:calc(16px + env(safe-area-inset-left))}
-  body.touch #banner{bottom:auto;top:22%}
+  body.touch #banner{top:auto;bottom:calc(6px + env(safe-area-inset-bottom));width:130px;margin-left:-65px}
+  body.touch #banner svg{width:130px;height:82px}
+  body.touch #banner .lbl{font-size:9px;margin-top:-4px;white-space:nowrap;margin-left:-40px;margin-right:-40px}
+  body.touch.skin-wyrm #banner .lbl{font-size:12px}
+  body.touch #banner .sp{top:40px;width:3px;height:3px}
   body.touch .keys{display:none}
   .tkeys{display:none;font-size:13px;line-height:1.7;margin-bottom:16px;opacity:.85}
   body.touch .tkeys{display:block}
