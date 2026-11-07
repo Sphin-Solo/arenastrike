@@ -124,6 +124,10 @@
   #mpLeave{margin-top:8px}
   #mpStatus{font-size:13px;margin-top:8px;min-height:16px;color:#9fe7ff;user-select:text;-webkit-user-select:text}
   #mpPlayers{font-size:13px;margin-top:4px;font-weight:700}
+  #duel{position:absolute;left:0;right:0;top:14px;text-align:center;font:900 15px Orbitron,system-ui,sans-serif;letter-spacing:.12em;text-shadow:0 0 10px rgba(127,227,255,.6),0 2px 4px #000}
+  body.touch #duel{top:40px;font-size:12px}
+  .modebtn{flex:1}
+  .modebtn.on{background:#1d3346;border-color:#7fe3ff;color:#bff3ff}
   #plist{margin-top:6px;font-size:12px;font-weight:700;letter-spacing:.04em}
   #plist b{opacity:.8;margin-left:4px}
   #fps{position:absolute;right:12px;top:10px;font:12px ui-monospace,Menlo,Consolas,monospace;opacity:.6}
@@ -149,6 +153,7 @@
   <div id="tl">SCORE <span id="score">0</span><br>WAVE <span id="wave">1</span><br>KILLS <span id="kills">0</span><div id="plist"></div></div>
   <div id="bl"><div class="lab">HEALTH <span id="hptxt">100</span></div><div id="hpbar"><div id="hpfill"></div></div></div>
   <div id="br"><div id="reload"></div><div id="ammo">30<small> / 30</small></div></div>
+  <div id="duel"></div>
   <div id="msg"></div>
   <div id="sub"></div>
   <div id="flashfx"></div>
@@ -199,6 +204,7 @@
       <div class="mprow"><input id="mpName" maxlength="12" placeholder="Your name" autocomplete="off"><button class="mpb" id="mpHost">HOST ROOM</button></div>
       <div class="mprow"><input id="mpCode" maxlength="5" placeholder="ROOM CODE" autocomplete="off" autocapitalize="characters"><button class="mpb" id="mpJoin">JOIN</button></div>
     </div>
+    <div id="mpMode" class="mprow" style="display:none"><button class="mpb modebtn" data-mode="coop">CO-OP</button><button class="mpb modebtn" data-mode="duel">1V1 SKIRMISH</button></div>
     <div id="mpStatus"></div><div id="mpPlayers"></div>
     <button class="mpb" id="mpLeave" style="display:none">LEAVE ROOM</button>
   </div>
@@ -1038,6 +1044,7 @@ let rayTargets = solids.slice();
 function rebuildTargets() {
   rayTargets = solids.slice();
   for (const e of enemies) if (e.active && e.alive) for (const p of e.hitParts) rayTargets.push(p);
+  if (typeof avatars !== 'undefined' && sk.mode === 'duel') for (const av of avatars.values()) if (!av.down) for (const p of av.hit) rayTargets.push(p);
 }
 function makeEnemy() {
   const mat = new THREE.MeshStandardMaterial({ color: 0x55607a, roughness: 0.5, metalness: 0.5, emissive: 0xffffff, emissiveIntensity: 0 });
@@ -1687,7 +1694,8 @@ function reset() {
   for (const d of debris) { d.life = 0; d.m.visible = false; }
   down = false; for (const k in streaks) delete streaks[k]; for (const k in playerKills) delete playerKills[k];
   rebuildTargets();
-  if (net.role !== 'client') startWave();
+  if (net.role === 'host' && sk.mode === 'duel') duelStartMatch();
+  else if (net.role !== 'client') startWave();
 }
 function startWave() {
   wave++; toSpawn = Math.min(3 + wave * 2, 30); spawnT = 1.2; waveActive = true; waveKills = 0;
@@ -1732,7 +1740,7 @@ function reload() {
 }
 
 function shoot() {
-  if (reloading || down) return;
+  if (reloading || down || frozen()) return;
   if (ammo <= 0) { sfx.empty(); reload(); fireCD = 0.25; return; }
   ammo--; fireCD = 0.095;
   const moving = Math.min(1, Math.hypot(vel.x, vel.z) / 7);
@@ -1743,8 +1751,9 @@ function shoot() {
   camera.updateMatrixWorld();
   const muzzle = tB.set(aimT > 0.5 ? 0 : 0.17, aimT > 0.5 ? -0.08 : -0.15, -0.85); camera.localToWorld(muzzle);
   if (hits.length) {
-    const h = hits[0], pt = h.point, e = h.object.userData.enemy;
-    if (e) {
+    const h = hits[0], pt = h.point, e = h.object.userData.enemy, pid = h.object.userData.player;
+    if (pid) hitPlayer(pid, !!h.object.userData.head, pt);
+    else if (e) {
       const head = !!h.object.userData.head;
       damageEnemy(e, head ? 105 : 35, head, pt, shotDir);
     } else {
@@ -1998,10 +2007,12 @@ function updatePlayer(dt) {
     if (downT <= 0) respawnPlayer();
     return false;
   }
+  const fz0 = frozen();
   const fx = -Math.sin(yaw), fz = -Math.cos(yaw), rx = Math.cos(yaw), rz = -Math.sin(yaw);
   let ix = (keys.KeyD || keys.ArrowRight ? 1 : 0) - (keys.KeyA || keys.ArrowLeft ? 1 : 0);
   let iz = (keys.KeyW || keys.ArrowUp ? 1 : 0) - (keys.KeyS || keys.ArrowDown ? 1 : 0);
   if (touchMove.id !== null) { ix = touchMove.x; iz = -touchMove.y; }
+  if (fz0) { ix = 0; iz = 0; }
   const il = Math.hypot(ix, iz); if (il > 1) { ix /= il; iz /= il; }
   const sprint = (keys.ShiftLeft || keys.ShiftRight || touchSprint) && iz > 0 && aimT < 0.3 && !firing;
   const spd = aimT > 0.5 ? 4.2 : (sprint ? 10.5 : 7);
@@ -2010,7 +2021,7 @@ function updatePlayer(dt) {
   vel.x += (tvx - vel.x) * a; vel.z += (tvz - vel.z) * a;
   P.x += vel.x * dt; P.z += vel.z * dt;
   resolveXZ(P, 0.4, P.y);
-  if ((keys.Space || touchJump) && onGround) { velY = 8.4; onGround = false; }
+  if ((keys.Space || touchJump) && onGround && !fz0) { velY = 8.4; onGround = false; }
   const wasGround = onGround, fallV = velY;
   velY -= 25 * dt;
   P.y += velY * dt;
@@ -2025,7 +2036,7 @@ function updatePlayer(dt) {
     if (reloadT >= reloadDur) reloading = false;
   }
   lastHitT += dt;
-  if (lastHitT > 4 && health < 100) health = Math.min(100, health + 12 * dt);
+  if (lastHitT > 4 && health < 100 && !isDuel()) health = Math.min(100, health + 12 * dt);
   return sprint;
 }
 
@@ -2187,7 +2198,8 @@ const hud = { score: -1, wave: -1, kills: -1, hp: -1, ammo: -1, reload: null, ga
 const el = { score: $('score'), wave: $('wave'), kills: $('kills'), hptxt: $('hptxt'), hpfill: $('hpfill'), ammo: $('ammo'), reload: $('reload'), cross: $('cross'), hit: $('hit'), vig: $('vig'), msg: $('msg'), sub: $('sub') };
 function updateHUD(dt) {
   if (hud.score !== score) { hud.score = score; el.score.textContent = score; }
-  if (hud.wave !== wave) { hud.wave = wave; el.wave.textContent = wave; }
+  const wv = isDuel() ? 'R' + sk.round : wave;
+  if (hud.wave !== wv) { hud.wave = wv; el.wave.textContent = wv; }
   if (hud.kills !== kills) { hud.kills = kills; el.kills.textContent = kills; }
   const hp = Math.ceil(health);
   if (hud.hp !== hp) { hud.hp = hp; el.hptxt.textContent = hp; el.hpfill.style.transform = 'scaleX(' + (hp / 100) + ')'; el.hpfill.style.background = hp < 35 ? '#ff4d4d' : ''; }
@@ -2473,13 +2485,13 @@ async function hostGame() {
   peer.on('disconnected', () => { try { if (!peer.destroyed) peer.reconnect(); } catch (e) {} });
   peer.on('connection', conn => {
     conn.on('open', () => {
-      if (net.conns.size >= 3) { try { conn.send({ t: 'full' }); } catch (e) {} setTimeout(() => conn.close(), 300); return; }
+      if (net.conns.size >= (sk.mode === 'duel' ? 1 : 3)) { try { conn.send({ t: 'full' }); } catch (e) {} setTimeout(() => conn.close(), 300); return; }
       const id = conn.peer;
       const used = new Set([0, ...[...net.peers.values()].map(p => p.slot)]);
       let slot = 1; while (used.has(slot)) slot++;
       net.conns.set(id, conn);
       net.peers.set(id, { name: 'Player', skin: 'afterglow', slot, st: null, tgt: { x: 0, y: 0, z: 0, vx: 0, vz: 0 } });
-      conn.send({ t: 'welcome', id, slot, playing: state === 'play' || state === 'paused' ? 1 : 0 });
+      conn.send({ t: 'welcome', id, slot, mode: sk.mode, playing: state === 'play' || state === 'paused' ? 1 : 0 });
       updateLobbyUI();
     });
     conn.on('data', d => hostOnData(conn.peer, d));
@@ -2519,7 +2531,7 @@ function leaveGame(silent) {
   try { if (net.hostConn) net.hostConn.close(); } catch (e) {}
   try { if (net.peer) net.peer.destroy(); } catch (e) {}
   net.conns.clear(); net.peers.clear(); net.hostConn = null; net.peer = null; net.busy = false;
-  net.role = 'solo'; net.myId = 'me'; net.code = ''; net.slot = 0;
+  net.role = 'solo'; net.myId = 'me'; net.code = ''; net.slot = 0; sk.mode = 'coop'; sk.phase = 'idle';
   for (const id of [...avatars.keys()]) removeAvatar(id);
   netPlayers.length = 0;
   if (!silent) setStatus('');
@@ -2544,8 +2556,11 @@ function updateLobbyUI() {
   $('mpRows').style.display = inRoom ? 'none' : '';
   $('mpLeave').style.display = inRoom ? '' : 'none';
   $('mpTag').textContent = inRoom ? (net.role === 'host' ? '· HOSTING' : '· JOINED') : '';
-  if (net.role === 'host') setStatus('Room code: ' + net.code + '  —  share it with friends (' + (net.conns.size + 1) + '/4)');
-  else if (net.role === 'client') setStatus('In room ' + net.code + '. Press PLAY to drop in.');
+  $('mpMode').style.display = net.role === 'host' ? '' : 'none';
+  document.querySelectorAll('.modebtn').forEach(b => b.classList.toggle('on', b.dataset.mode === sk.mode));
+  const modeName = sk.mode === 'duel' ? '1v1 Skirmish' : 'Co-op';
+  if (net.role === 'host') setStatus('Room code: ' + net.code + '  ·  ' + modeName + '  (' + (net.conns.size + 1) + '/' + (sk.mode === 'duel' ? 2 : 4) + ')');
+  else if (net.role === 'client') setStatus('In room ' + net.code + ' · ' + modeName + '. Press PLAY to drop in.');
   const list = net.role === 'host'
     ? [[myName() + ' (host)', 0], ...[...net.peers.values()].map(p => [p.name, p.slot])]
     : netPlayers.map(p => [p.name + (p.id === 'host' ? ' (host)' : '') + (p.id === net.myId ? ' (you)' : ''), p.slot]);
@@ -2569,6 +2584,8 @@ function hostOnData(id, d) {
       p.st = d; p.stT = performance.now(); p.tgt.x = d.x; p.tgt.y = d.y; p.tgt.z = d.z; p.skin = d.s === 'wyrm' ? 'wyrm' : 'afterglow'; break;
     }
     case 'shot': netBroadcast({ t: 'shot', id, a: d.a, b: d.b }, id); onRemoteShot(id, d.a, d.b); break;
+    case 'phit': takePlayerHit(d); break;
+    case 'died': duelRoundEnd('host'); break;
     case 'hit': {
       const e = enemies[d.i]; if (!e || !e.active || !e.alive) break;
       tC.set(e.group.position.x, d.h ? 2.05 : 1.2, e.group.position.z);
@@ -2580,7 +2597,13 @@ function hostOnData(id, d) {
 function clientOnData(d) {
   if (!d) return;
   switch (d.t) {
-    case 'welcome': net.slot = d.slot; break;
+    case 'welcome': net.slot = d.slot; sk.mode = d.mode || 'coop'; updateLobbyUI(); break;
+    case 'mode': sk.mode = d.m; updateLobbyUI(); rebuildTargets(); break;
+    case 'rnd': duelApplyRound(d); break;
+    case 'fight': sk.phase = 'fight'; showMsg('FIGHT', 1.2); break;
+    case 'rend': duelApplyRoundEnd(d); break;
+    case 'mend': duelMatchEnd(d); break;
+    case 'phit': takePlayerHit(d); break;
     case 'snap': applySnapshot(d); break;
     case 'kill': onKill(d); break;
     case 'fin': kills = d.k; finisher(d.x, d.z); break;
@@ -2592,7 +2615,7 @@ function clientOnData(d) {
     case 'shot': onRemoteShot(d.id, d.a, d.b); break;
     case 'start': if (state === 'play' || state === 'paused') softReset(); break;
     case 'over': if (state !== 'start') { down = false; gameOver(); } break;
-    case 'full': setStatus('That room is full (4 players).', true); leaveGame(true); break;
+    case 'full': setStatus('That room is full.', true); leaveGame(true); break;
     case 'msg': showSub(d.m, '#ffb347'); break;
   }
 }
@@ -2638,7 +2661,7 @@ function netTick(dt) {
   if (net.role === 'host' && net.conns.size) {
     snapT -= dt; if (snapT <= 0) { snapT = 1 / 15; netBroadcast(buildSnapshot()); }
     // everyone in the fight is down -> game over for all
-    if (state === 'play' || state === 'paused') {
+    if ((state === 'play' || state === 'paused') && sk.mode !== 'duel') {
       const act = [down];
       for (const p of net.peers.values()) if (p.st && p.st.pl) act.push(!!p.st.dn);
       if (act.length > 1 && act.every(Boolean)) { netBroadcast({ t: 'over' }); down = false; gameOver(); }
@@ -2648,6 +2671,7 @@ function netTick(dt) {
     if (stT <= 0) { stT = 1 / 20; netSend({ t: 'st', x: r2(P.x), y: r2(P.y), z: r2(P.z), yw: r2(yaw), pt: r2(pitch), dn: down ? 1 : 0, s: skin, pl: state === 'play' || state === 'paused' ? 1 : 0 }); }
   }
   if (net.role === 'host') for (const [id, p] of net.peers) if (p.st && p.st.pl) updateAvatarTarget(id, p.name, p.slot, p.st.x, p.st.y, p.st.z, p.st.yw, p.st.pt, p.st.dn); else if (avatars.has(id)) removeAvatar(id);
+  duelTick(dt); duelLocalTick(dt);
   hudListT -= dt;
   if (hudListT <= 0) { hudListT = 0.25; updatePlayerList(); }
 }
@@ -2694,7 +2718,8 @@ function makeAvatar(id, name, slot) {
   const acc = new THREE.MeshBasicMaterial({ color: col });
   const armor = new THREE.MeshStandardMaterial({ color: 0x3c4458, roughness: 0.45, metalness: 0.55, emissive: col, emissiveIntensity: 0.08 });
   const g = new THREE.Group();
-  const box = (par, w, h, d, x, y, z, m) => { const b = new THREE.Mesh(boxGeo, m); b.scale.set(w, h, d); b.position.set(x, y, z); b.castShadow = true; par.add(b); return b; };
+  const hit = [];
+  const box = (par, w, h, d, x, y, z, m) => { const b = new THREE.Mesh(boxGeo, m); b.scale.set(w, h, d); b.position.set(x, y, z); b.castShadow = true; par.add(b); b.userData.player = id; hit.push(b); return b; };
   const hips = new THREE.Group(); hips.position.y = 0.95; g.add(hips);
   const leg = s => { const h = new THREE.Group(); h.position.set(s * 0.15, 0, 0); hips.add(h); box(h, 0.2, 0.5, 0.22, 0, -0.25, 0, avDark); box(h, 0.18, 0.45, 0.2, 0, -0.7, 0.02, armor); return h; };
   const legL = leg(-1), legR = leg(1);
@@ -2703,7 +2728,7 @@ function makeAvatar(id, name, slot) {
   box(torso, 0.3, 0.06, 0.02, 0, 0.5, 0.17, acc);
   box(torso, 0.4, 0.4, 0.18, 0, 0.38, -0.24, avDark);
   const head = new THREE.Group(); head.position.y = 0.82; torso.add(head);
-  box(head, 0.3, 0.32, 0.32, 0, 0.1, 0, armor);
+  box(head, 0.3, 0.32, 0.32, 0, 0.1, 0, armor).userData.head = true;
   box(head, 0.26, 0.08, 0.02, 0, 0.12, 0.165, acc);
   const arms = new THREE.Group(); arms.position.set(0, 0.6, 0.05); torso.add(arms);
   box(arms, 0.12, 0.12, 0.42, 0.2, -0.08, 0.18, avDark); box(arms, 0.12, 0.12, 0.42, -0.14, -0.1, 0.24, avDark);
@@ -2713,15 +2738,16 @@ function makeAvatar(id, name, slot) {
   const fl = new THREE.Sprite(flashM); fl.scale.set(0.6, 0.6, 1); muzzle.add(fl);
   const tag = nameTag(name, col); tag.position.y = 2.35; g.add(tag);
   scene.add(g);
-  const av = { g, hips, legL, legR, torso, head, arms, muzzle, flashM, tag, name, slot, tx: 0, ty: 0, tz: 0, tyaw: 0, tpitch: 0, down: 0, walk: 0, flash: 0, fresh: true };
-  avatars.set(id, av); return av;
+  const av = { g, hips, legL, legR, torso, head, arms, muzzle, flashM, tag, name, slot, hit, tx: 0, ty: 0, tz: 0, tyaw: 0, tpitch: 0, down: 0, walk: 0, flash: 0, fresh: true };
+  avatars.set(id, av); rebuildTargets(); return av;
 }
-function removeAvatar(id) { const av = avatars.get(id); if (!av) return; avatars.delete(id); scene.remove(av.g); }
+function removeAvatar(id) { const av = avatars.get(id); if (!av) return; avatars.delete(id); scene.remove(av.g); rebuildTargets(); }
 function updateAvatarTarget(id, name, slot, x, y, z, yw, pt, dn) {
   let av = avatars.get(id);
   if (av && (av.name !== name || av.slot !== slot)) { removeAvatar(id); av = null; }
   if (!av) av = makeAvatar(id, name, slot);
-  av.tx = x; av.ty = y; av.tz = z; av.tyaw = yw; av.tpitch = pt; av.down = dn;
+  if (!!av.down !== !!dn) { av.down = dn; rebuildTargets(); }
+  av.tx = x; av.ty = y; av.tz = z; av.tyaw = yw; av.tpitch = pt;
   if (av.fresh) { av.g.position.set(x, y, z); av.fresh = false; }
 }
 function updateAvatars(dt) {
@@ -2737,6 +2763,117 @@ function updateAvatars(dt) {
     av.hips.position.y = dn ? 0.25 : 0.95;
     av.tag.material.color.setHex(dn ? 0xff5555 : 0xffffff);
     if (av.flash > 0) { av.flash = Math.max(0, av.flash - dt * 14); av.flashM.opacity = av.flash; }
+  }
+}
+
+// ---------- 1v1 Skirmish (duel) ----------
+const DUEL_WIN = 3, DUEL_SPAWN = { host: [0, -36, Math.PI], client: [0, 36, 0] };
+const sk = { mode: 'coop', wins: { host: 0, client: 0 }, round: 0, phase: 'idle', t: 0, lastCount: -1 };
+const isDuel = () => sk.mode === 'duel' && net.role !== 'solo';
+function mySide() { return net.role === 'host' ? 'host' : 'client'; }
+function setMode(m) {
+  if (net.role !== 'host') return;
+  if (m === 'duel' && net.conns.size > 1) { setStatus('1v1 Skirmish needs exactly 2 players — ask extra players to leave first.', true); return; }
+  sk.mode = m; netBroadcast({ t: 'mode', m }); updateLobbyUI();
+}
+document.querySelectorAll('.modebtn').forEach(b => b.addEventListener('click', e => { e.stopPropagation(); setMode(b.dataset.mode); }));
+// host: start a fresh match (called from reset)
+function duelStartMatch() {
+  sk.wins.host = 0; sk.wins.client = 0; sk.round = 0; sk.phase = 'wait'; sk.t = 0;
+  for (const e of enemies) { e.active = false; e.alive = false; e.group.visible = false; }
+  waveActive = false; toSpawn = 0; waveDelay = 0; wave = 0;
+}
+function duelStartRound() {
+  sk.round++; sk.phase = 'count'; sk.t = 3;
+  const m = { t: 'rnd', r: sk.round, w: [sk.wins.host, sk.wins.client] };
+  netBroadcast(m); duelApplyRound(m);
+}
+// everyone: reset positions for a new round
+function duelApplyRound(m) {
+  sk.round = m.r; sk.wins.host = m.w[0]; sk.wins.client = m.w[1]; sk.phase = 'count'; sk.t = 3; sk.lastCount = -1;
+  const s = DUEL_SPAWN[mySide()];
+  P.set(s[0], 0, s[1]); vel.set(0, 0, 0); velY = 0; yaw = s[2]; pitch = 0;
+  health = 100; ammo = MAG; reloading = false; down = false; downT = 0; firing = false;
+  for (const b of bullets) { b.active = false; b.m.visible = false; }
+  equipT = 1; gun.visible = true;
+}
+// host: someone died
+function duelRoundEnd(winner) {
+  if (sk.phase !== 'fight') return;
+  sk.wins[winner]++; sk.phase = 'end'; sk.t = 3.2;
+  const m = { t: 'rend', win: winner, w: [sk.wins.host, sk.wins.client] };
+  netBroadcast(m); duelApplyRoundEnd(m);
+}
+function duelApplyRoundEnd(m) {
+  sk.wins.host = m.w[0]; sk.wins.client = m.w[1]; sk.phase = 'end'; firing = false;
+  const iWon = m.win === mySide(), myW = sk.wins[mySide()], matchOver = Math.max(m.w[0], m.w[1]) >= DUEL_WIN;
+  const opp = [...avatars.values()][0];
+  if (iWon) {
+    hitKill = true; hitT = 0.3;
+    showBanner(Math.min(5, myW), matchOver ? 'MATCH POINT' : 'ROUND WON');
+    jawS.v += 16; wingS.v += 6; heat = 2; sfx.kill(true, Math.min(5, myW + (matchOver ? 2 : 0)));
+    if (matchOver && opp) finisher(opp.g.position.x, opp.g.position.z);
+    showMsg(matchOver ? 'VICTORY' : 'ROUND WON', 3);
+  } else {
+    showMsg(matchOver ? 'DEFEAT' : 'ROUND LOST', 3); sfx.hurt();
+  }
+}
+function duelMatchEnd(m) {
+  sk.phase = 'idle';
+  const iWon = m.win === mySide();
+  state = 'over'; down = false;
+  if (document.pointerLockElement) document.exitPointerLock();
+  showOverlay(iWon ? '<span>VICTORY</span>' : 'DEFEAT', 'Final score ' + sk.wins[mySide()] + ' — ' + sk.wins[mySide() === 'host' ? 'client' : 'host'] + '.', net.role === 'host' ? 'REMATCH' : 'READY FOR REMATCH');
+}
+// host timers (real time, so slow-mo doesn't stretch them)
+function duelTick(dt) {
+  if (net.role !== 'host' || sk.mode !== 'duel') return;
+  const opp = [...net.peers.values()][0];
+  const oppIn = opp && opp.st && opp.st.pl, meIn = state === 'play' || state === 'paused';
+  if (sk.phase === 'wait') {
+    if (oppIn && meIn) duelStartRound();
+  } else if (sk.phase === 'count') {
+    sk.t -= dt; if (sk.t <= 0) { sk.phase = 'fight'; netBroadcast({ t: 'fight' }); }
+  } else if (sk.phase === 'end') {
+    sk.t -= dt;
+    if (sk.t <= 0) {
+      const w = sk.wins.host >= DUEL_WIN ? 'host' : sk.wins.client >= DUEL_WIN ? 'client' : null;
+      if (w) { const m = { t: 'mend', win: w }; netBroadcast(m); duelMatchEnd(m); }
+      else if (oppIn) duelStartRound(); else sk.phase = 'wait';
+    }
+  }
+}
+// client-side countdown display + local timers
+function duelLocalTick(dt) {
+  if (!isDuel()) { if ($('duel').textContent) $('duel').textContent = ''; return; }
+  if (sk.phase === 'count') {
+    if (net.role === 'client') sk.t -= dt;
+    const c = Math.max(1, Math.ceil(sk.t));
+    if (c !== sk.lastCount) { sk.lastCount = c; showMsg(String(c), 0.9); sfx.empty(); }
+  }
+  const me = sk.wins[mySide()], op = sk.wins[mySide() === 'host' ? 'client' : 'host'];
+  const oppName = (net.role === 'host' ? ([...net.peers.values()][0] || {}).name : (netPlayers.find(p => p.id === 'host') || {}).name) || 'Opponent';
+  const txt = sk.phase === 'wait' ? 'Waiting for an opponent…' : 'YOU ' + me + '  —  ' + op + ' ' + oppName.toUpperCase() + '   ·   ROUND ' + sk.round;
+  const d = $('duel'); if (d.textContent !== txt) d.textContent = txt;
+}
+const frozen = () => isDuel() && sk.phase !== 'fight';
+// a shot from me hit the opponent's avatar
+function hitPlayer(id, head, pt) {
+  if (!isDuel() || sk.phase !== 'fight') return;
+  emit(pt.x, pt.y, pt.z, 1, 0.25, 0.25, head ? 16 : 9, 5, 1.5);
+  addImpact(pt, head ? 1.1 : 0.75, head ? 0xffe14d : 0xff5ae6);
+  hitT = 0.14; hitKill = false; sfx.hit(head);
+  const dmg = head ? 80 : 24;
+  if (net.role === 'host') { const c = net.conns.get(id); if (c && c.open) c.send({ t: 'phit', dmg, h: head ? 1 : 0 }); }
+  else netSend({ t: 'phit', dmg, h: head ? 1 : 0 });
+}
+// I was hit by the opponent
+function takePlayerHit(d) {
+  if (!isDuel() || sk.phase !== 'fight' || down || state !== 'play') return;
+  health -= d.dmg; lastHitT = 0; dmgFlash = Math.min(1, dmgFlash + 0.6); shake = Math.min(1, shake + 0.5); sfx.hurt();
+  if (health <= 0) {
+    health = 0; down = true; downT = 1e9; firing = false; showMsg('ELIMINATED', 2);
+    if (net.role === 'host') duelRoundEnd('client'); else netSend({ t: 'died' });
   }
 }
 
@@ -2757,7 +2894,7 @@ renderer.setAnimationLoop(now => {
     const sprint = state === 'play' ? updatePlayer(dt) : false;
     updateEnemies(dt);
     updateBullets(dt);
-    if (net.role !== 'client') updateWaves(dt);
+    if (net.role !== 'client' && !isDuel()) updateWaves(dt);
     updateCamera(dt, sprint);
   } else if (state === 'start') {
     // slow idle orbit for the title screen
