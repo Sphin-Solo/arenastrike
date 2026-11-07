@@ -1586,8 +1586,8 @@ function finisher(x, z) {
 }
 // ---------- Skins ----------
 const SKINS = {
-  afterglow: { name: 'VX-9 AFTERGLOW', shell: 0xe4e8ef, shellR: 0.32, dark: 0x15171d, darkMap: false, chrome: 0xdfe5ee, chromeR: 0.12, c: 0x22e8ff, m: 0xff2bd6, flash: 0x9ff4ff, flash2: 0xff5ae6, holo: 0xffffff, led: '#22e8ff', warn: '#ff2bd6', muzzleZ: -0.84 },
-  wyrm: { name: 'WYRMBONE', shell: 0xcfc2a2, shellR: 0.62, dark: 0x8a8090, darkMap: true, chrome: 0x5d5862, chromeR: 0.4, c: 0x46ffb0, m: 0x9b4dff, flash: 0x7dffc8, flash2: 0x9b4dff, holo: 0x7dffc8, led: '#46ffb0', warn: '#ff2a3c', muzzleZ: -0.9 },
+  afterglow: { name: 'VX-9 AFTERGLOW', env: 1, shell: 0xe4e8ef, shellR: 0.32, dark: 0x15171d, darkMap: false, chrome: 0xdfe5ee, chromeR: 0.12, c: 0x22e8ff, m: 0xff2bd6, flash: 0x9ff4ff, flash2: 0xff5ae6, holo: 0xffffff, led: '#22e8ff', warn: '#ff2bd6', muzzleZ: -0.84 },
+  wyrm: { name: 'WYRMBONE', env: 0.4, shell: 0xa8977a, shellR: 0.62, dark: 0x6a6070, darkMap: true, chrome: 0x5d5862, chromeR: 0.4, c: 0x46ffb0, m: 0x9b4dff, flash: 0x7dffc8, flash2: 0x9b4dff, holo: 0x7dffc8, led: '#46ffb0', warn: '#ff2a3c', muzzleZ: -0.9 },
 };
 let skin = 'wyrm';
 try { const sv = localStorage.getItem('arena-skin'); if (SKINS[sv]) skin = sv; } catch (e) {}
@@ -1596,6 +1596,8 @@ function applySkin(n) {
   gm.shell.color.setHex(K.shell); gm.shell.roughness = K.shellR;
   gm.dark.color.setHex(K.dark); gm.dark.map = K.darkMap ? scaleTex : null; gm.dark.needsUpdate = true;
   gm.chrome.color.setHex(K.chrome); gm.chrome.roughness = K.chromeR;
+  for (const m of [gm.shell, gm.dark, gm.chrome]) m.envMapIntensity = K.env;
+  dm.bone.color.setHex(n === 'wyrm' ? 0xbfae8c : 0xd6c9a8); dm.scale.envMapIntensity = 0.45; dm.bone.envMapIntensity = 0.35;
   NEON_C.setHex(K.c); NEON_M.setHex(K.m); gm.neonC.color.copy(NEON_C); gm.neonM.color.copy(NEON_M);
   flashMat.color.setHex(K.flash); flashMatM.color.setHex(K.flash2); holoMat.color.setHex(K.holo);
   flashLight.color.setHex(K.flash); gunFlashLight.color.setHex(K.flash);
@@ -2185,6 +2187,10 @@ function render() {
   flashMat.opacity = flashMatM.opacity = 1; tracers.forEach(t => { t.m.material.opacity = 1; t.m.position.set(0, 1.5, -5); t.m.scale.set(0.1, 0.1, 1); }); impacts.forEach(im => { im.s.material.opacity = 1; im.s.position.set(0, 1.5, -5); }); flashLight.intensity = 1; gunFlashLight.intensity = 1; killLight.intensity = 1; ringMat.opacity = ringMat2.opacity = pillarMat.opacity = 1; ring1.position.set(0, 0.1, -6); ring2.position.set(0, 0.1, -6); pillar.position.set(0, 0, -10);
   emit(0, 1.5, -4, 1, 1, 1, 10, 1, 0);
   render();
+  // compile the viewmodel for both skins now, so pressing Play doesn't stall
+  gun.position.set(0.2, -0.2, -0.42); gun.rotation.set(0, 0, 0);
+  const keep = skin;
+  for (const sk of ['afterglow', 'wyrm', keep]) { applySkin(sk); renderer.render(gunScene, gunCam); }
   enemies.forEach(e => { e.group.visible = false; e.flashMat.opacity = 0; });
   bullets.forEach(b => { b.m.visible = false; });
   debris.forEach(d => { d.m.visible = false; });
