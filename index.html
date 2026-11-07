@@ -161,14 +161,14 @@ document.body.insertBefore(renderer.domElement, document.body.firstChild);
 const canvas = renderer.domElement;
 
 const scene = new THREE.Scene();
-scene.fog = new THREE.Fog(0x0e1226, 45, 175);
+scene.fog = new THREE.Fog(0x0b0f20, 40, 165);
 
 const camera = new THREE.PerspectiveCamera(75, innerWidth / innerHeight, 0.05, 300);
 camera.rotation.order = 'YXZ';
 scene.add(camera);
 
-scene.add(new THREE.HemisphereLight(0x8fa8ff, 0x1a1626, 0.55));
-const sun = new THREE.DirectionalLight(0xc4d2ff, 0.8);
+scene.add(new THREE.HemisphereLight(0x8fa8ff, 0x1a1626, 0.34));
+const sun = new THREE.DirectionalLight(0xc4d2ff, 0.55);
 sun.position.set(-34, 55, -22);
 sun.castShadow = true;
 sun.shadow.mapSize.set(2048, 2048);
@@ -236,7 +236,7 @@ const T = {
   window: tex(256, 512, (g, w, h) => {
     g.fillStyle = '#05070c'; g.fillRect(0, 0, w, h);
     for (let y = 8; y < h; y += 16) for (let x = 6; x < w; x += 12) {
-      const r = mr(); if (r < 0.55) continue;
+      const r = mr(); if (r < 0.74) continue;
       const col = r > 0.93 ? '#ff4ad8' : r > 0.86 ? '#3be8ff' : r > 0.7 ? '#ffd9a0' : '#8fa6c8';
       g.fillStyle = col; g.globalAlpha = 0.5 + mr() * 0.5; g.fillRect(x, y, 7, 9);
     }
@@ -249,9 +249,9 @@ T.concrete.repeat.set(24, 24);
 
 // --- materials ---
 const M = {
-  floor: new THREE.MeshStandardMaterial({ map: T.concrete, color: 0x7a8090, roughness: 0.85, metalness: 0.05 }),
-  wall: new THREE.MeshStandardMaterial({ map: T.panel, color: 0x6c7488, roughness: 0.8, metalness: 0.2 }),
-  concrete: new THREE.MeshStandardMaterial({ map: T.panel, color: 0x8b8f96, roughness: 0.9, metalness: 0.02 }),
+  floor: new THREE.MeshStandardMaterial({ map: T.concrete, color: 0x4c5262, roughness: 0.85, metalness: 0.05 }),
+  wall: new THREE.MeshStandardMaterial({ map: T.panel, color: 0x464e62, roughness: 0.8, metalness: 0.2 }),
+  concrete: new THREE.MeshStandardMaterial({ map: T.panel, color: 0x6a6f78, roughness: 0.9, metalness: 0.02 }),
   hazard: new THREE.MeshStandardMaterial({ map: T.hazard, roughness: 0.7 }),
   metal: new THREE.MeshStandardMaterial({ color: 0x2a2f3a, roughness: 0.4, metalness: 0.8 }),
   pipe: new THREE.MeshStandardMaterial({ color: 0x4a5160, roughness: 0.35, metalness: 0.85 }),
@@ -262,7 +262,7 @@ const M = {
   contTeal: new THREE.MeshStandardMaterial({ map: T.container, color: 0x2f7a7a, roughness: 0.6, metalness: 0.45 }),
   contYel: new THREE.MeshStandardMaterial({ map: T.container, color: 0xb08a2a, roughness: 0.6, metalness: 0.45 }),
   contBlue: new THREE.MeshStandardMaterial({ map: T.container, color: 0x2f4f8a, roughness: 0.6, metalness: 0.45 }),
-  city: new THREE.MeshStandardMaterial({ map: T.window, emissiveMap: T.window, emissive: 0xffffff, emissiveIntensity: 0.9, color: 0x2a2f3c, roughness: 0.9 }),
+  city: new THREE.MeshStandardMaterial({ map: T.window, emissiveMap: T.window, emissive: 0xffffff, emissiveIntensity: 0.6, color: 0x161a24, roughness: 0.9 }),
   neonC: new THREE.MeshBasicMaterial({ color: 0x3be8ff }),
   neonM: new THREE.MeshBasicMaterial({ color: 0xff3ad0 }),
   neonA: new THREE.MeshBasicMaterial({ color: 0xffb347 }),
@@ -404,9 +404,9 @@ for (const [sx, sz] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) {
 // --- distant city skyline (non-solid, one draw call) ---
 {
   for (let i = 0; i < 70; i++) {
-    const a = (i / 70) * Math.PI * 2 + mr() * 0.05, r = 80 + mr() * 45;
-    const w = 8 + mr() * 14, d = 8 + mr() * 14, h = 18 + Math.pow(mr(), 1.5) * 70;
-    addStatic(boxUV(w, h, d, 8), M.city, Math.cos(a) * r, h / 2 - 2, Math.sin(a) * r, 0, -a, 0, 1, 1, 1, { noShadow: true, ghost: true });
+    const a = (i / 70) * Math.PI * 2 + mr() * 0.05, r = 108 + mr() * 45;
+    const w = 10 + mr() * 16, d = 10 + mr() * 16, h = 16 + Math.pow(mr(), 1.6) * 60;
+    addStatic(boxUV(w, h, d, 24), M.city, Math.cos(a) * r, h / 2 - 2, Math.sin(a) * r, 0, -a, 0, 1, 1, 1, { noShadow: true, ghost: true });
     if (mr() < 0.4) addStatic(boxGeo, M.red, Math.cos(a) * r, h - 1.6, Math.sin(a) * r, 0, 0, 0, 0.5, 0.5, 0.5, { noShadow: true, ghost: true });
   }
 }
@@ -536,7 +536,7 @@ const lampCols = [0x3be8ff, 0xff3ad0, 0xffb347, 0x3be8ff, 0xff3ad0, 0xffb347];
   const col = lampCols[i];
   glow(x, 6.36, z + 1.1, 0.45, 0.05, 0.5, new THREE.MeshBasicMaterial({ color: col }));
   collide(x, z, 0.3, 0.3, 6.5);
-  const pl = new THREE.PointLight(col, 1.4, 20, 2); pl.position.set(x, 6.1, z + 1.1); scene.add(pl);
+  const pl = new THREE.PointLight(col, 1.9, 22, 2); pl.position.set(x, 6.1, z + 1.1); scene.add(pl);
   const pool = new THREE.Mesh(new THREE.CircleGeometry(4.5, 24), new THREE.MeshBasicMaterial({ map: T.radial, color: col, transparent: true, opacity: 0.35, blending: THREE.AdditiveBlending, depthWrite: false }));
   pool.rotation.x = -Math.PI / 2; pool.position.set(x, 0.02, z + 1.1); scene.add(pool);
 });
@@ -2228,7 +2228,7 @@ renderer.setAnimationLoop(now => {
   if (fpsTime >= 0.5) {
     const fps = fpsFrames / fpsTime;
     fpsEl.textContent = Math.round(fps) + ' FPS' + (pixelRatio < Math.min(window.devicePixelRatio || 1, 1.5) ? ' · res ' + Math.round(pixelRatio * 100) + '%' : '');
-    if (state === 'play' && fps < 50) { lowFpsTime += fpsTime; } else lowFpsTime = 0;
+    if (state === 'play' && gameTime > 3 && fps < 50) { lowFpsTime += fpsTime; } else lowFpsTime = 0;
     if (lowFpsTime >= 2 && pixelRatio > 0.6) { pixelRatio = Math.max(0.6, pixelRatio - 0.2); renderer.setPixelRatio(pixelRatio); onResize(); lowFpsTime = 0; }
     fpsFrames = 0; fpsTime = 0;
   }
