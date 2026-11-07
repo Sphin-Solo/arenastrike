@@ -2420,6 +2420,21 @@ function render() {
 // ---------- Co-op multiplayer (peer-to-peer, host-authoritative) ----------
 const r2 = v => Math.round(v * 100) / 100;
 const PEER_PREFIX = 'arenastrike-v1-';
+// TURN relay (needed for many mobile-data networks). Fill these in from a free Metered account to enable it.
+const NET_CFG = { meteredApp: '', meteredKey: '' };
+const BASE_ICE = [{ urls: 'stun:stun.l.google.com:19302' }, { urls: 'stun:stun1.l.google.com:19302' }, { urls: 'stun:stun.cloudflare.com:3478' }];
+let turnOn = false;
+async function iceServers() {
+  if (NET_CFG.meteredApp && NET_CFG.meteredKey) {
+    try {
+      const r = await fetch('https://' + NET_CFG.meteredApp + '.metered.live/api/v1/turn/credentials?apiKey=' + encodeURIComponent(NET_CFG.meteredKey));
+      if (r.ok) { const list = await r.json(); if (Array.isArray(list) && list.length) { turnOn = true; return BASE_ICE.concat(list); } }
+    } catch (e) {}
+  }
+  turnOn = false; return BASE_ICE;
+}
+// phones drop the signalling link when the app is backgrounded (e.g. switching apps to share the code): reconnect on return
+document.addEventListener('visibilitychange', () => { if (!document.hidden && net.peer && !net.peer.destroyed && net.peer.disconnected) { try { net.peer.reconnect(); } catch (e) {} } });
 const SLOT_COLORS = [0x22e8ff, 0xff2bd6, 0xffb347, 0x7dff5a];
 function myName() { const v = ($('mpName').value || '').trim().slice(0, 12); return v || 'Player'; }
 try { $('mpName').value = localStorage.getItem('arena-name') || ('Player' + ((Math.random() * 90 + 10) | 0)); } catch (e) { $('mpName').value = 'Player' + ((Math.random() * 90 + 10) | 0); }
@@ -2448,7 +2463,7 @@ async function hostGame() {
   net.busy = true; setStatus('Creating room…');
   try { await loadPeerJS(); } catch (e) { net.busy = false; return setStatus(e.message, true); }
   const code = genCode();
-  const peer = new Peer(PEER_PREFIX + code, { debug: 0 });
+  const peer = new Peer(PEER_PREFIX + code, { debug: 0, config: { iceServers: await iceServers() } });
   net.peer = peer;
   peer.on('open', () => { net.busy = false; net.role = 'host'; net.myId = 'host'; net.code = code; net.slot = 0; updateLobbyUI(); });
   peer.on('error', err => {
@@ -2478,13 +2493,16 @@ async function joinGame() {
   if (code.length !== 5) return setStatus('Enter the 5-character room code.', true);
   net.busy = true; setStatus('Connecting to ' + code + '…');
   try { await loadPeerJS(); } catch (e) { net.busy = false; return setStatus(e.message, true); }
-  const peer = new Peer(undefined, { debug: 0 });
+  const peer = new Peer(undefined, { debug: 0, config: { iceServers: await iceServers() } });
   net.peer = peer;
   const fail = msg => { setStatus(msg, true); leaveGame(true); };
+  const blocked = 'Could not connect to room ' + code + '. The network (often mobile data) is blocking a direct link' + (turnOn ? '.' : ' — try Wi-Fi on both devices.');
   peer.on('open', id => {
     const conn = peer.connect(PEER_PREFIX + code, { reliable: true, serialization: 'json' });
     net.hostConn = conn;
-    const to = setTimeout(() => { if (net.role !== 'client') fail('Could not reach room ' + code + '. Check the code — some networks block direct connections.'); }, 15000);
+    setStatus('Found room ' + code + ', linking up…');
+    const to = setTimeout(() => { if (net.role !== 'client') fail(blocked); }, 25000);
+    const watch = setInterval(() => { const pc = conn.peerConnection; if (net.role === 'client' || !net.peer) return clearInterval(watch); if (pc && (pc.iceConnectionState === 'failed' || pc.connectionState === 'failed')) { clearInterval(watch); clearTimeout(to); fail(blocked); } }, 500);
     conn.on('open', () => {
       clearTimeout(to); net.busy = false; net.role = 'client'; net.myId = id; net.code = code;
       conn.send({ t: 'hello', n: myName(), s: skin });
@@ -2494,7 +2512,7 @@ async function joinGame() {
     conn.on('close', () => onHostLost());
     conn.on('error', () => onHostLost());
   });
-  peer.on('error', err => { if (net.role === 'client') return; fail(err.type === 'peer-unavailable' ? 'Room ' + code + ' was not found.' : 'Connection error (' + err.type + ').'); });
+  peer.on('error', err => { if (net.role === 'client') return; fail(err.type === 'peer-unavailable' ? 'Room ' + code + ' was not found. Check the code, and make sure the host still has the game open on screen.' : err.type === 'network' || err.type === 'server-error' || err.type === 'socket-error' ? 'Could not reach the matchmaking server. Check your internet connection.' : 'Connection error (' + err.type + ').'); });
 }
 function leaveGame(silent) {
   try { for (const c of net.conns.values()) c.close(); } catch (e) {}
