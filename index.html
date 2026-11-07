@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Arena Strike</title>
-<link rel="preconnect" href="https://fonts.googleapis.com"><link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;900&display=swap" rel="stylesheet">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;900&family=Pirata+One&display=swap" rel="stylesheet">
 <style>
   html,body{margin:0;height:100%;overflow:hidden;background:#0d1220;font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;color:#e8eefc;user-select:none;-webkit-user-select:none}
   canvas{display:block}
@@ -65,6 +65,22 @@
   #flashfx{position:absolute;inset:0;opacity:0;background:radial-gradient(circle at center,rgba(220,255,255,.9),rgba(34,232,255,.4) 35%,rgba(255,43,214,.25) 55%,rgba(0,0,0,0) 78%)}
   #flashfx.show{animation:fl .9s ease-out forwards}
   @keyframes fl{0%{opacity:0}10%{opacity:1}100%{opacity:0}}
+  .skins{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:16px}
+  .skl{grid-column:1/3;font-size:11px;letter-spacing:.2em;opacity:.7}
+  .skinbtn{background:#1b2438;color:#e8eefc;border:1px solid #2f3d5c;padding:10px;text-align:left;border-radius:9px;letter-spacing:.05em}
+  .skinbtn:hover{background:#243050}
+  .skinbtn b{display:block;font-size:13px}.skinbtn small{opacity:.6;font-weight:500;font-size:11px;letter-spacing:.08em}
+  .skinbtn.on{border-color:#7fe3ff;box-shadow:0 0 0 1px #7fe3ff inset;background:#1d3346}
+  body.skin-wyrm .skinbtn.on{border-color:#46ffb0;box-shadow:0 0 0 1px #46ffb0 inset;background:#16302a}
+  body.skin-wyrm #banner{--c:#46ffb0}
+  body.skin-wyrm #banner.t3{--c:#9b4dff} body.skin-wyrm #banner.t4{--c:#c22bff} body.skin-wyrm #banner.t5{--c:#ff2a3c}
+  body.skin-wyrm #banner .num{font:400 34px 'Pirata One',Georgia,serif;fill:#e9ffe9}
+  body.skin-wyrm #banner .lbl{font:400 16px 'Pirata One',Georgia,serif;letter-spacing:.18em;text-shadow:0 0 10px var(--c),0 0 2px #000}
+  body.skin-wyrm #fin{background:linear-gradient(90deg,transparent,rgba(6,2,8,.9) 22%,rgba(6,2,8,.9) 78%,transparent)}
+  body.skin-wyrm #fin .t{font:400 54px 'Pirata One',Georgia,serif;letter-spacing:.12em;color:#e9ffe9;text-shadow:0 0 18px #46ffb0,0 0 40px #9b4dff,0 3px 0 #000}
+  body.skin-wyrm #fin .s{color:#9bffd0;font-family:Georgia,serif;letter-spacing:.3em}
+  body.skin-wyrm #fin .ln{background:linear-gradient(90deg,transparent,#46ffb0 30%,#9b4dff 70%,transparent);box-shadow:0 0 10px #46ffb0}
+  body.skin-wyrm #flashfx{background:radial-gradient(circle at center,rgba(200,255,220,.85),rgba(70,255,176,.35) 35%,rgba(120,40,200,.3) 55%,rgba(0,0,0,0) 78%)}
   #fps{position:absolute;right:12px;top:10px;font:12px ui-monospace,Menlo,Consolas,monospace;opacity:.6}
   #overlay{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(8,12,22,.72);backdrop-filter:blur(3px)}
   #panel{width:min(440px,90vw);background:#141b2cee;border:1px solid #2b3956;border-radius:14px;padding:28px 30px;box-shadow:0 20px 60px #0008}
@@ -119,6 +135,9 @@
     <kbd>Esc / P</kbd><span>Pause</span>
   </div>
   <label>Sensitivity <input id="sens" type="range" min="0.4" max="3" step="0.05" value="1"><span id="sensv">1.00</span></label>
+  <div class="skins"><div class="skl">WEAPON SKIN</div>
+    <button class="skinbtn" data-skin="afterglow"><b>VX-9 AFTERGLOW</b><small>neon energy rifle</small></button>
+    <button class="skinbtn" data-skin="wyrm"><b>WYRMBONE</b><small>dragon · dark</small></button></div>
   <button id="play">PLAY</button>
   <div id="note"></div>
 </div></div>
@@ -348,7 +367,8 @@ part(gun, 0.064, 0.16, 0.02, 0, -0.025, 0.465, gm.rubber);                    //
 part(gun, 0.012, 0.045, 0.07, 0, -0.07, 0.045, gm.chrome);                    // trigger guard
 part(gun, 0.008, 0.03, 0.012, 0, -0.06, 0.03, gm.chrome);                     // trigger
 // heat-sink fins
-for (let i = 0; i < 7; i++) part(gun, 0.078, 0.02, 0.008, 0, 0.074, -0.2 - i * 0.04, gm.chrome);
+const afterglowOnly = [];
+for (let i = 0; i < 7; i++) afterglowOnly.push(part(gun, 0.078, 0.02, 0.008, 0, 0.074, -0.2 - i * 0.04, gm.chrome));
 // neon trim lines (both sides)
 for (const sx of [-1, 1]) {
   part(gun, 0.003, 0.006, 0.52, sx * 0.0405, 0.03, -0.3, gm.neonC);
@@ -363,10 +383,9 @@ cyl(gun, 0.014, 0.17, 0, 0.012, -0.715, barrelMat);
 const coilMats = [], coils = [];
 for (let i = 0; i < 3; i++) {
   const m = new THREE.MeshBasicMaterial({ color: 0x22e8ff }); coilMats.push(m);
-  const t = new THREE.Mesh(new THREE.TorusGeometry(0.026, 0.0055, 8, 24), m); t.position.set(0, 0.012, -0.66 - i * 0.04); gun.add(t); coils.push(t);
+  const t = new THREE.Mesh(new THREE.TorusGeometry(0.026, 0.0055, 8, 24), m); t.position.set(0, 0.012, -0.66 - i * 0.04); gun.add(t); coils.push(t); afterglowOnly.push(t);
 }
-cyl(gun, 0.024, 0.05, 0, 0.012, -0.79, gm.dark, 8);
-cyl(gun, 0.0248, 0.006, 0, 0.012, -0.816, gm.neonC, 8);
+afterglowOnly.push(cyl(gun, 0.024, 0.05, 0, 0.012, -0.79, gm.dark, 8), cyl(gun, 0.0248, 0.006, 0, 0.012, -0.816, gm.neonC, 8));
 // cables
 {
   const c1 = new THREE.CatmullRomCurve3([new THREE.Vector3(-0.034, -0.062, -0.02), new THREE.Vector3(-0.052, -0.075, 0.1), new THREE.Vector3(-0.046, -0.025, 0.22), new THREE.Vector3(-0.034, -0.002, 0.3)]);
@@ -378,10 +397,10 @@ cyl(gun, 0.0248, 0.006, 0, 0.012, -0.816, gm.neonC, 8);
 const ledCanvas = document.createElement('canvas'); ledCanvas.width = 128; ledCanvas.height = 64;
 const ledCtx = ledCanvas.getContext('2d');
 const ledTex = new THREE.CanvasTexture(ledCanvas); ledTex.encoding = THREE.sRGBEncoding;
-let ledKey = '';
+let ledKey = '', ledCol = '#22e8ff', ledWarn = '#ff2bd6';
 function drawLED(text, frac, warn) {
   const key = text + '|' + Math.round(frac * 10) + '|' + warn; if (key === ledKey) return; ledKey = key;
-  const g = ledCtx; const col = warn ? '#ff2bd6' : '#22e8ff';
+  const g = ledCtx; const col = warn ? ledWarn : ledCol;
   g.fillStyle = '#02060a'; g.fillRect(0, 0, 128, 64);
   g.strokeStyle = col; g.globalAlpha = 0.5; g.lineWidth = 2; g.strokeRect(2, 2, 124, 60); g.globalAlpha = 1;
   g.font = 'bold 34px ui-monospace,Menlo,Consolas,monospace'; g.textAlign = 'center'; g.textBaseline = 'middle';
@@ -440,6 +459,72 @@ part(lHand, 0.02, 0.05, 0.07, -0.05, 0.012, 0.01, gm.glove);
 limb(lHand, new THREE.Vector3(-0.02, -0.03, 0.03), new THREE.Vector3(-0.3, -0.36, 0.42), 0.62, 0.095, gm.sleeve);
 limb(lHand, new THREE.Vector3(-0.02, -0.03, 0.03), new THREE.Vector3(-0.3, -0.36, 0.42), 0.1, 0.105, gm.chrome);
 limb(lHand, new THREE.Vector3(-0.065, -0.04, 0.04), new THREE.Vector3(-0.3, -0.36, 0.42), 0.32, 0.008, gm.neonM);
+
+// --- "Wyrmbone" skin pieces (original design): dragon head muzzle, wings, spine ---
+const scaleTex = (() => {
+  const c = document.createElement('canvas'); c.width = c.height = 128; const g = c.getContext('2d');
+  g.fillStyle = '#1c1820'; g.fillRect(0, 0, 128, 128);
+  for (let row = 0; row < 9; row++) for (let col = 0; col < 9; col++) {
+    const x = col * 16 + (row % 2) * 8, y = row * 14;
+    const grd = g.createLinearGradient(x, y - 8, x, y + 8); grd.addColorStop(0, '#3a3340'); grd.addColorStop(1, '#0e0b12');
+    g.fillStyle = grd; g.beginPath(); g.arc(x, y, 9, 0, Math.PI); g.fill();
+    g.strokeStyle = '#05040a'; g.lineWidth = 1.5; g.stroke();
+  }
+  const t = new THREE.CanvasTexture(c); t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(14, 14); t.encoding = THREE.sRGBEncoding; return t;
+})();
+const dm = {
+  bone: new THREE.MeshStandardMaterial({ color: 0xd6c9a8, roughness: 0.6, metalness: 0 }),
+  scale: new THREE.MeshStandardMaterial({ color: 0x8a8090, map: scaleTex, roughness: 0.38, metalness: 0.55 }),
+  membrane: new THREE.MeshStandardMaterial({ color: 0x24102c, roughness: 0.75, metalness: 0.05, emissive: 0x3a0d55, emissiveIntensity: 0.35, side: THREE.DoubleSide, transparent: true, opacity: 0.93 }),
+  eye: new THREE.MeshBasicMaterial({ color: 0x46ffb0 }),
+  maw: new THREE.MeshBasicMaterial({ color: 0x46ffb0, transparent: true, opacity: 0.3, blending: THREE.AdditiveBlending, depthWrite: false }),
+};
+const dragon = new THREE.Group(); gun.add(dragon);
+const Y_AXIS = new THREE.Vector3(0, 1, 0);
+function spike(parent, x, y, z, r, h, dir, m) {
+  const c = new THREE.Mesh(new THREE.ConeGeometry(r, h, 5), m);
+  c.quaternion.setFromUnitVectors(Y_AXIS, dir.clone().normalize());
+  c.position.set(x, y, z).addScaledVector(dir.clone().normalize(), h / 2); parent.add(c); return c;
+}
+// head
+const dHead = new THREE.Group(); dHead.position.set(0, 0.012, -0.6); dragon.add(dHead);
+profile(dHead, [[0, -0.004], [0, 0.05], [0.07, 0.062], [0.12, 0.046], [0.2, 0.03], [0.265, 0.012], [0.265, -0.004]], 0.052, 0.006, dm.scale);
+profile(dHead, [[0.075, 0.058], [0.13, 0.07], [0.15, 0.052], [0.12, 0.046]], 0.07, 0.003, dm.bone);           // brow ridge
+for (const sx of [-1, 1]) {
+  part(dHead, 0.006, 0.01, 0.026, sx * 0.033, 0.04, -0.11, dm.eye);                                            // eyes
+  spike(dHead, sx * 0.024, 0.055, -0.02, 0.011, 0.075, new THREE.Vector3(sx * 0.35, 0.6, 1), dm.bone);         // horns
+  spike(dHead, sx * 0.04, 0.072, 0.045, 0.007, 0.05, new THREE.Vector3(sx * 0.2, 0.15, 1), dm.bone);
+  spike(dHead, sx * 0.03, 0.02, -0.05, 0.004, 0.03, new THREE.Vector3(sx, -0.2, 0.6), dm.bone);               // cheek spurs
+  for (let i = 0; i < 6; i++) spike(dHead, sx * 0.02, -0.002, -0.11 - i * 0.028, 0.0045, 0.017, new THREE.Vector3(0, -1, 0), dm.bone); // upper teeth
+}
+spike(dHead, 0.018, -0.002, -0.255, 0.006, 0.03, new THREE.Vector3(0, -1, -0.15), dm.bone);                    // fangs
+spike(dHead, -0.018, -0.002, -0.255, 0.006, 0.03, new THREE.Vector3(0, -1, -0.15), dm.bone);
+const maw = part(dHead, 0.034, 0.014, 0.19, 0, -0.01, -0.13, dm.maw);
+// jaw (animated)
+const dJaw = new THREE.Group(); dJaw.position.set(0, -0.004, -0.04); dHead.add(dJaw);
+profile(dJaw, [[0, 0], [0.215, 0], [0.215, -0.012], [0.12, -0.026], [0, -0.036]], 0.048, 0.005, dm.scale);
+for (const sx of [-1, 1]) {
+  for (let i = 0; i < 5; i++) spike(dJaw, sx * 0.018, 0.002, -0.07 - i * 0.028, 0.004, 0.014, new THREE.Vector3(0, 1, 0), dm.bone);
+  spike(dJaw, sx * 0.018, 0.002, -0.205, 0.0055, 0.024, new THREE.Vector3(0, 1, -0.1), dm.bone);
+}
+// neck plates and spine spikes along the top
+for (let i = 0; i < 5; i++) { const pl = part(dragon, 0.07 - i * 0.004, 0.012, 0.05, 0, 0.055 - i * 0.002, -0.58 + i * 0.045, dm.bone); pl.rotation.x = -0.25; }
+for (let i = 0; i < 9; i++) spike(dragon, 0, 0.066, -0.44 + i * 0.07, 0.008, 0.045 - Math.abs(i - 3) * 0.003, new THREE.Vector3(0, 1, 0.8), dm.bone);
+for (let i = 0; i < 4; i++) spike(dragon, 0, -0.1, 0.25 + i * 0.05, 0.006, 0.03, new THREE.Vector3(0, -1, 0.7), dm.bone); // tail spikes under stock
+// wings (pivot near rear of receiver)
+function makeWing(side) {
+  const w = new THREE.Group(); w.position.set(side * 0.045, 0.05, -0.04); dragon.add(w);
+  const tips = [[0.3, 0.12], [0.34, 0.03], [0.26, -0.05]];
+  const sh = new THREE.Shape(); sh.moveTo(0, 0); sh.lineTo(0.3, 0.12); sh.quadraticCurveTo(0.27, 0.06, 0.34, 0.03); sh.quadraticCurveTo(0.27, 0.0, 0.26, -0.05); sh.quadraticCurveTo(0.14, -0.05, 0.06, -0.025); sh.lineTo(0, 0);
+  const g = new THREE.ShapeGeometry(sh, 6); g.rotateY(-Math.PI / 2);
+  const mem = new THREE.Mesh(g, dm.membrane); w.add(mem);
+  for (const [u, v] of tips) limb(w, new THREE.Vector3(0, 0, 0), new THREE.Vector3(0, v, u), Math.hypot(u, v), 0.008, dm.bone);
+  limb(w, new THREE.Vector3(0, 0, 0), new THREE.Vector3(0, 0.12, 0.3), 0.33, 0.004, dm.eye).position.x += side * 0.004; // glowing vein
+  spike(w, 0, 0.0, 0.0, 0.008, 0.03, new THREE.Vector3(side * 0.2, 1, -0.6), dm.bone);                        // wing claw
+  return w;
+}
+const wingL = makeWing(-1), wingR = makeWing(1);
+dragon.visible = false;
 
 // --- muzzle flash (plasma) ---
 const flashTex = (() => {
@@ -548,7 +633,7 @@ for (let i = 0; i < 10; i++) {
 let imHead = 0;
 function addImpact(p, size, color) {
   const im = impacts[imHead]; imHead = (imHead + 1) % impacts.length;
-  im.s.position.copy(p); im.size = size; im.life = 0.09; im.s.material.color.setHex(color || 0x5ff0ff);
+  im.s.position.copy(p); im.size = size; im.life = 0.09; im.s.material.color.setHex(color || SKINS[skin].flash);
 }
 function updateTracers(dt) {
   for (const t of tracers) if (t.life > 0) {
@@ -876,6 +961,126 @@ function SPAWN(K) {
   K.osc([K.out, room], { f0: 300, f1: 1200, d: 0.3, peak: 0.15, fm: { f0: 90, i0: 200, i1: 0 } });
   K.noise([K.out, room], { type: 'bandpass', f0: 2000, f1: 6000, d: 0.25, peak: 0.1 });
 }
+// ---- Wyrmbone (dark dragon) sound designs ----
+// formant "voice": rough sawtooth throat shaped by vowel-like resonances -> screams, snarls, roars
+function voice(K, dests, o) {
+  const c = K.c, t = o.t || 0, dur = o.d;
+  const os = c.createOscillator(); os.type = 'sawtooth';
+  const pts = o.pitch; // [[time, freq], ...]
+  os.frequency.setValueAtTime(pts[0][1], t);
+  for (let i = 1; i < pts.length; i++) os.frequency.exponentialRampToValueAtTime(pts[i][1], t + pts[i][0]);
+  const lfo = c.createOscillator(); lfo.frequency.value = o.vib || 7; const lg = c.createGain(); lg.gain.value = (o.vibDepth || 0.03) * pts[0][1]; lfo.connect(lg); lg.connect(os.frequency);
+  const ruf = c.createOscillator(); ruf.type = 'square'; ruf.frequency.value = o.rough || 37; const rg = c.createGain(); rg.gain.value = (o.roughDepth || 0.08) * pts[0][1]; ruf.connect(rg); rg.connect(os.frequency);
+  // growl: amplitude flutter
+  const am = c.createGain(); am.gain.value = 1;
+  const flt = c.createOscillator(); flt.frequency.value = o.flutter || 45; const fg = c.createGain(); fg.gain.value = o.flutterDepth || 0.35; flt.connect(fg); fg.connect(am.gain);
+  const sum = c.createGain(); sum.gain.value = 1;
+  for (const [f, q, gv] of o.formants) { const bp = c.createBiquadFilter(); bp.type = 'bandpass'; bp.frequency.value = f; bp.Q.value = q; const g = c.createGain(); g.gain.value = gv; os.connect(bp); bp.connect(g); g.connect(sum); }
+  // breath noise through the same throat
+  const nb = c.createBuffer(1, SR * 2, SR); { const d = nb.getChannelData(0); for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1; }
+  const ns = c.createBufferSource(); ns.buffer = nb; const nbp = c.createBiquadFilter(); nbp.type = 'bandpass'; nbp.frequency.value = o.breathF || 1800; nbp.Q.value = 0.8;
+  const ng = c.createGain(); ng.gain.value = o.breath || 0.25; ns.connect(nbp); nbp.connect(ng); ng.connect(sum);
+  const sh = c.createWaveShaper(); sh.curve = shaperCurve(o.drive || 3);
+  const env = c.createGain(); const a = o.a || 0.02;
+  env.gain.setValueAtTime(0.0001, t); env.gain.exponentialRampToValueAtTime(o.peak || 0.5, t + a);
+  env.gain.setValueAtTime(o.peak || 0.5, t + a + (o.hold || 0)); env.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+  sum.connect(am); am.connect(sh); sh.connect(env); for (const dst of [].concat(dests)) env.connect(dst);
+  for (const n of [os, lfo, ruf, flt, ns]) { n.start(t); n.stop(t + dur + 0.05); }
+}
+const SCREAM = [[800, 4, 1], [1250, 5, 0.8], [2700, 6, 0.5], [3400, 8, 0.25]];
+const ROAR = [[420, 3, 1], [780, 4, 0.8], [1900, 5, 0.35]];
+function bell(K, dests, f, t, d, peak) { // inharmonic toll
+  [[1, 1], [2.76, 0.45], [5.4, 0.22], [8.93, 0.1], [0.5, 0.5]].forEach(([r, v]) => K.osc(dests, { f0: f * r, t, d: d * (r < 1 ? 1.2 : 1 / Math.sqrt(r)), peak: peak * v, a: 0.002 }));
+}
+function W_SHOT(K, p) {
+  const out = K.out, drv = K.drive(2.8, K.gain(0.85, out)), room = K.room(1.2, 2.6, 0.22), slap = K.slap();
+  K.noise(drv, { type: 'highpass', f0: 4200, d: 0.012, peak: 0.9 });
+  K.osc(drv, { f0: 150 * p, f1: 34, d: 0.14, peak: 1 });
+  K.noise([drv, room, slap], { type: 'bandpass', f0: 1900 * p, f1: 450, q: 0.9, d: 0.18, peak: 0.7 });
+  voice(K, [out, room, slap], { pitch: [[0, 620 * p], [0.05, 900 * p], [0.2, 300 * p]], d: 0.24, a: 0.008, peak: 0.32, formants: SCREAM, rough: 41, roughDepth: 0.12, flutter: 55, drive: 4, breath: 0.4 });
+  K.noise([out, room], { type: 'lowpass', f0: 900, f1: 120, a: 0.005, d: 0.55, peak: 0.22 });   // dark tail
+  K.osc(out, { f0: 52, f1: 36, d: 0.25, peak: 0.4 });
+}
+function W_KILL(K, tier) {
+  const out = K.out, drv = K.drive(2.2, K.gain(0.8, out)), room = K.room(2.4, 2, 0.38);
+  K.osc(drv, { f0: 120, f1: 26, d: 0.5, peak: 1 });                                               // body blow
+  K.noise([drv, room], { type: 'lowpass', f0: 1100, f1: 120, d: 0.45, peak: 0.6 });
+  K.noise(drv, { type: 'bandpass', f0: 2600, f1: 700, q: 1, d: 0.1, peak: 0.4 });                  // bone crack
+  const root = [73.42, 77.78, 87.31, 92.5, 98][tier - 1];                                          // low, uneasy steps
+  bell(K, [out, room], root * 4, 0.02, 1.6, 0.22);                                                // toll
+  if (tier >= 2) bell(K, [out, room], root * 4 * 1.414, 0.24, 1.3, 0.13);                         // tritone toll
+  if (tier >= 4) bell(K, [out, room], root * 2, 0.46, 1.8, 0.22);
+  // dark choir drone (ooh): detuned saws through low vowels
+  for (const r of [root * 2, root * 2 * 1.189, root * 3]) for (const det of [-10, 10])
+    K.osc([out, room], { type: 'sawtooth', f0: r, det, a: 0.08, d: 1.4, peak: 0.035 + tier * 0.006, lp: 700, lp1: 260, lpq: 3 });
+  K.osc(out, { f0: root, f1: root * 0.8, a: 0.03, d: 1.3, peak: 0.45 });                            // sub drone
+  if (tier >= 3) voice(K, [out, room], { t: 0.05, pitch: [[0, 210], [0.25, 260], [0.9, 120]], d: 0.95, a: 0.06, peak: 0.28 + tier * 0.03, formants: ROAR, rough: 31, roughDepth: 0.14, flutter: 38, flutterDepth: 0.5, drive: 5, breath: 0.5, breathF: 900 });
+  if (tier >= 5) { K.osc([out, room], { type: 'sawtooth', f0: root * 8, f1: root * 6, a: 0.2, d: 1.2, peak: 0.05, lp: 1600, lp1: 300 }); bell(K, [out, room], root * 8, 0.7, 1.2, 0.12); }
+}
+function W_FINISHER(K) {
+  const out = K.out, drv = K.drive(3.2, K.gain(0.8, out)), room = K.room(3.6, 1.8, 0.5);
+  const T = 0.3;
+  K.noise([out, room], { type: 'bandpass', f0: 200, f1: 2500, q: 1.5, a: 0.28, d: 0.04, peak: 0.45 }); // inhale
+  voice(K, [out, room], { t: T, pitch: [[0, 180], [0.3, 320], [0.9, 260], [1.7, 90]], d: 1.8, a: 0.05, hold: 0.5, peak: 0.6, formants: ROAR, rough: 29, roughDepth: 0.16, flutter: 33, flutterDepth: 0.55, drive: 6, breath: 0.6, breathF: 800 });
+  voice(K, [out, room], { t: T + 0.05, pitch: [[0, 700], [0.4, 1100], [1.2, 400]], d: 1.3, a: 0.05, peak: 0.18, formants: SCREAM, rough: 47, drive: 4 });
+  K.osc(drv, { f0: 70, f1: 18, t: T, d: 2.2, peak: 1 });
+  K.noise([drv, room], { type: 'lowpass', f0: 700, f1: 60, t: T, d: 1.6, peak: 0.9 });
+  [0.35, 0.95, 1.55].forEach((tt, i) => bell(K, [out, room], 146.83 * (i === 2 ? 0.5 : 1), T + tt, 2.2, 0.22));
+  for (const r of [73.42, 87.31, 103.83, 146.83, 174.61]) for (const det of [-12, 12]) K.osc([out, room], { type: 'sawtooth', f0: r, det, t: T + 0.2, a: 0.3, d: 2.6, peak: 0.035, lp: 900, lp1: 200, lpq: 2 });
+}
+function W_CELL_OUT(K) {
+  const room = K.room(0.6, 3, 0.2);
+  for (let i = 0; i < 7; i++) K.noise([K.out, room], { type: 'bandpass', f0: R(900, 2200), q: 6, t: i * 0.018, d: 0.02, peak: 0.25 }); // bone creak
+  K.noise(K.out, { type: 'bandpass', f0: 2200, q: 2, t: 0.13, d: 0.03, peak: 0.8 });
+  K.noise([K.out, room], { type: 'highpass', f0: 2500, t: 0.14, d: 0.25, peak: 0.2 });
+  voice(K, K.out, { t: 0.12, pitch: [[0, 140], [0.2, 110]], d: 0.25, peak: 0.12, formants: ROAR, drive: 3, breath: 0.6, breathF: 700 });
+}
+function W_CELL_IN(K) {
+  const drv = K.drive(2.4, K.gain(0.8, K.out)), room = K.room(0.8, 3, 0.25);
+  K.osc(drv, { f0: 130, f1: 60, d: 0.16, peak: 0.95 });
+  K.noise([drv, room], { type: 'bandpass', f0: 700, q: 1.3, d: 0.08, peak: 0.7 });
+  K.noise(K.out, { type: 'highpass', f0: 4500, t: 0.1, d: 0.015, peak: 0.5 });
+  bell(K, [K.out, room], 293.66, 0.1, 0.6, 0.08);
+}
+function W_CHARGE_PULL(K) {
+  K.noise(K.out, { type: 'bandpass', f0: 1800, q: 2, d: 0.04, peak: 0.6 });
+  K.noise(K.out, { type: 'bandpass', f0: 300, f1: 1800, q: 2, a: 0.28, d: 0.04, peak: 0.25 });  // deep inhale
+  voice(K, K.out, { t: 0.05, pitch: [[0, 90], [0.3, 140]], d: 0.34, a: 0.2, peak: 0.12, formants: ROAR, drive: 3, breath: 0.8, breathF: 600 });
+}
+function W_CHARGE_RELEASE(K) {
+  const drv = K.drive(2.6, K.gain(0.8, K.out)), room = K.room(1.2, 2.6, 0.35);
+  K.noise([drv, room], { type: 'bandpass', f0: 1600, q: 1.2, d: 0.05, peak: 0.9 });
+  K.osc(drv, { f0: 180, f1: 45, d: 0.15, peak: 0.8 });
+  voice(K, [K.out, room], { pitch: [[0, 260], [0.08, 330], [0.4, 150]], d: 0.45, a: 0.01, peak: 0.3, formants: ROAR, rough: 33, roughDepth: 0.14, drive: 5, breath: 0.5, breathF: 900 });
+  bell(K, [K.out, room], 196, 0.05, 0.9, 0.08);
+}
+function W_EQUIP(K) {
+  const room = K.room(1.2, 2.6, 0.3);
+  for (let i = 0; i < 3; i++) K.noise([K.out, room], { type: 'lowpass', f0: 900, f1: 200, t: i * 0.11, a: 0.02, d: 0.09, peak: 0.45 }); // wing flaps
+  voice(K, [K.out, room], { t: 0.25, pitch: [[0, 110], [0.3, 170], [0.7, 90]], d: 0.75, a: 0.08, peak: 0.25, formants: ROAR, rough: 27, flutter: 30, drive: 4, breath: 0.6, breathF: 700 });
+  bell(K, [K.out, room], 146.83, 0.35, 1, 0.1);
+}
+function W_EMPTY(K) { K.noise(K.out, { type: 'highpass', f0: 3500, d: 0.015, peak: 0.6 }); voice(K, K.out, { pitch: [[0, 120], [0.15, 90]], d: 0.18, peak: 0.1, formants: ROAR, breath: 0.7, breathF: 600 }); }
+function W_INSPECT(K) {
+  for (let i = 0; i < 2; i++) K.noise(K.out, { type: 'lowpass', f0: 800, f1: 200, t: i * 0.14, a: 0.02, d: 0.1, peak: 0.3 });
+  voice(K, K.out, { t: 0.1, pitch: [[0, 95], [0.4, 120], [0.8, 85]], d: 0.85, a: 0.1, peak: 0.12, formants: ROAR, flutter: 24, flutterDepth: 0.6, breath: 0.8, breathF: 500 });
+}
+const wyrmBank = {};
+async function buildWyrmBank() {
+  try {
+    wyrmBank.shot = await Promise.all([0.94, 1.0, 1.06].map(p => renderSound(0.9, K => W_SHOT(K, p))));
+    wyrmBank.kill = await Promise.all([1, 2, 3, 4, 5].map(t => renderSound(2.6, K => W_KILL(K, t))));
+    wyrmBank.finisher = await renderSound(4.2, W_FINISHER);
+    wyrmBank.cellOut = await renderSound(0.6, W_CELL_OUT);
+    wyrmBank.cellIn = await renderSound(0.8, W_CELL_IN);
+    wyrmBank.chargePull = await renderSound(0.45, W_CHARGE_PULL);
+    wyrmBank.chargeRelease = await renderSound(1.2, W_CHARGE_RELEASE);
+    wyrmBank.equip = await renderSound(1.4, W_EQUIP);
+    wyrmBank.empty = await renderSound(0.3, W_EMPTY);
+    wyrmBank.inspect = await renderSound(1.0, W_INSPECT);
+  } catch (e) { console.warn('wyrm bank failed', e); }
+}
+
 (async function buildBank() {
   if (!OAC) return;
   try {
@@ -894,6 +1099,7 @@ function SPAWN(K) {
     bank.spawn = await renderSound(0.8, SPAWN);
     bank.finisher = await renderSound(3.4, FINISHER);
   } catch (e) { console.warn('sound bank failed', e); }
+  buildWyrmBank();
 })();
 
 function initAudio() {
@@ -912,7 +1118,8 @@ function initAudio() {
 }
 function play(name, vol, rate, lp, idx) {
   if (!actx || !bank[name]) return;
-  const b = bank[name], buf = Array.isArray(b) ? b[idx != null ? idx : (Math.random() * b.length) | 0] : b;
+  const b = (skin === 'wyrm' && wyrmBank[name]) || bank[name], buf = Array.isArray(b) ? b[idx != null ? idx : (Math.random() * b.length) | 0] : b;
+  if (!buf) return;
   const s = actx.createBufferSource(); s.buffer = buf; s.playbackRate.value = rate || 1;
   let n = s;
   if (lp) { const f = actx.createBiquadFilter(); f.type = 'lowpass'; f.frequency.value = lp; s.connect(f); n = f; }
@@ -1016,22 +1223,48 @@ function finisher(x, z) {
   slowT = 1.5; finT = 1.6;
   ring1.position.set(x, 0.06, z); ring2.position.set(x, 0.08, z); pillar.position.set(x, 20, z);
   killLight.intensity = 14;
-  for (let i = 0; i < 4; i++) emit(x, 0.5 + i * 0.6, z, i % 2 ? 1 : 0.2, i % 2 ? 0.2 : 0.9, 1, 45, 9, 9);
+  for (let i = 0; i < 4; i++) { const C = i % 2 ? NEON_M : NEON_C; emit(x, 0.5 + i * 0.6, z, C.r, C.g, C.b, 45, 9, 9); }
+  jawS.v += 18; wingS.v += 9;
   emit(x, 1, z, 0.9, 1, 1, 40, 14, 4);
   for (let i = 0; i < 3; i++) coilBoost[i] = 2;
   for (const b of bullets) if (b.active) { emit(b.m.position.x, b.m.position.y, b.m.position.z, 1, 0.6, 0.2, 6, 3, 1); b.active = false; b.m.visible = false; }
   const bonus = wave * 50; // awarded in updateWaves
-  $('fint').textContent = 'WAVE ' + wave + ' CLEARED';
+  $('fint').textContent = 'WAVE ' + wave + (skin === 'wyrm' ? ' DEVOURED' : ' CLEARED');
   $('fins').textContent = '+' + bonus + ' BONUS  ·  ' + kills + ' KILLS';
   restartAnim($('fin'), 'show'); restartAnim($('flashfx'), 'show');
   shake = Math.min(1, shake + 0.35);
   heat = 2.2;
   sfx.finisher();
 }
+// ---------- Skins ----------
+const SKINS = {
+  afterglow: { name: 'VX-9 AFTERGLOW', shell: 0xe4e8ef, shellR: 0.32, dark: 0x15171d, darkMap: false, chrome: 0xdfe5ee, chromeR: 0.12, c: 0x22e8ff, m: 0xff2bd6, flash: 0x9ff4ff, flash2: 0xff5ae6, holo: 0xffffff, led: '#22e8ff', warn: '#ff2bd6', muzzleZ: -0.84 },
+  wyrm: { name: 'WYRMBONE', shell: 0xcfc2a2, shellR: 0.62, dark: 0x8a8090, darkMap: true, chrome: 0x5d5862, chromeR: 0.4, c: 0x46ffb0, m: 0x9b4dff, flash: 0x7dffc8, flash2: 0x9b4dff, holo: 0x7dffc8, led: '#46ffb0', warn: '#ff2a3c', muzzleZ: -0.9 },
+};
+let skin = 'wyrm';
+try { const sv = localStorage.getItem('arena-skin'); if (SKINS[sv]) skin = sv; } catch (e) {}
+function applySkin(n) {
+  skin = n; const K = SKINS[n];
+  gm.shell.color.setHex(K.shell); gm.shell.roughness = K.shellR;
+  gm.dark.color.setHex(K.dark); gm.dark.map = K.darkMap ? scaleTex : null; gm.dark.needsUpdate = true;
+  gm.chrome.color.setHex(K.chrome); gm.chrome.roughness = K.chromeR;
+  NEON_C.setHex(K.c); NEON_M.setHex(K.m); gm.neonC.color.copy(NEON_C); gm.neonM.color.copy(NEON_M);
+  flashMat.color.setHex(K.flash); flashMatM.color.setHex(K.flash2); holoMat.color.setHex(K.holo);
+  flashLight.color.setHex(K.flash); gunFlashLight.color.setHex(K.flash);
+  for (const t of tracers) t.m.material.color.setHex(K.c);
+  ringMat.color.setHex(K.c); ringMat2.color.setHex(K.m); pillarMat.color.setHex(K.flash);
+  dragon.visible = n === 'wyrm';
+  for (const o of afterglowOnly) o.visible = n !== 'wyrm';
+  muzzleFlash.position.z = K.muzzleZ;
+  ledKey = ''; ledCol = K.led; ledWarn = K.warn;
+  document.body.classList.toggle('skin-wyrm', n === 'wyrm');
+  document.querySelectorAll('.skinbtn').forEach(b => b.classList.toggle('on', b.dataset.skin === n));
+  try { localStorage.setItem('arena-skin', n); } catch (e) {}
+}
 function reset() {
   P.set(0, 0, 0); vel.set(0, 0, 0); velY = 0; yaw = 0; pitch = 0;
   health = 100; ammo = MAG; score = 0; kills = 0; wave = 0; reloading = false; firing = false; aiming = false;
-  toSpawn = 0; waveDelay = 0; waveActive = false; lastHitT = 99; dmgFlash = 0; equipT = 1; streak = 0; gameTime = 0; lastKillT = -9; heat = 0; slowT = 0; timeScale = 1; finT = 0; sfx.equip();
+  toSpawn = 0; waveDelay = 0; waveActive = false; lastHitT = 99; dmgFlash = 0; equipT = 1; streak = 0; gameTime = 0; lastKillT = -9; heat = 0; slowT = 0; timeScale = 1; finT = 0; sfx.equip(); wingS.v += 5; jawS.v += 6;
   for (const e of enemies) { e.active = false; e.alive = false; e.group.visible = false; }
   for (const b of bullets) { b.active = false; b.m.visible = false; }
   for (const d of debris) { d.life = 0; d.m.visible = false; }
@@ -1097,8 +1330,8 @@ function shoot() {
       const head = !!h.object.userData.head;
       damageEnemy(e, head ? 105 : 35, head, pt, shotDir);
     } else {
-      emit(pt.x, pt.y, pt.z, 0.4, 0.95, 1, 8, 4.5, 1.5);
-      emit(pt.x, pt.y, pt.z, 1, 0.3, 0.9, 3, 3, 1);
+      emit(pt.x, pt.y, pt.z, NEON_C.r, NEON_C.g, NEON_C.b, 8, 4.5, 1.5);
+      emit(pt.x, pt.y, pt.z, NEON_M.r, NEON_M.g, NEON_M.b, 3, 3, 1);
       addImpact(pt, 0.55);
     }
     addTracer(muzzle, pt);
@@ -1157,6 +1390,7 @@ function explodeEnemy(e, head, dir) {
   const tier = Math.min(5, waveKills);
   heat = Math.min(2.2, heat + 0.5 + tier * 0.1);
   showBanner(tier, label);
+  jawS.v += 10 + tier * 1.5; wingS.v += 3 + tier * 0.6;
   sfx.kill(head, tier);
   if (waveActive && toSpawn === 0 && aliveCount() === 0) finisher(x, z);
   rebuildTargets();
@@ -1319,7 +1553,9 @@ function kickSprings() {
   sp.y.v += ads ? 0.08 : 0.18;
   sp.roll.v += R(-1, 1) * 0.35;
   coilWave = 0;
+  if (skin === 'wyrm') { jawS.v += ads ? 4 : 6; wingS.v += 0.5; }
 }
+const jawS = new Spring(300, 13), wingS = new Spring(55, 7);
 let coilWave = 9, sprintT = 0, inspectT = -1, chargeFlash = 0, idleT = 0;
 const MG0 = new THREE.Vector3(MAG_REST.x, MAG_REST.y - 0.1, MAG_REST.z + 0.005);
 const BOLT_GRAB = new THREE.Vector3(-0.075, 0.035, 0.1), BOLT_PULLED = new THREE.Vector3(-0.075, 0.035, 0.17);
@@ -1438,6 +1674,17 @@ function updateCamera(dt, sprint) {
   if (flashLight.intensity > 0) { tA.set(0.2, -0.1, -1.2); camera.localToWorld(tA); flashLight.position.copy(tA); }
   updateTracers(dt);
   updateCasings(dt);
+  if (dragon.visible) {
+    jawS.step(dt); wingS.step(dt);
+    const jaw = Math.max(0, Math.min(0.75, jawS.x)) + 0.02 + Math.sin(idleT * 1.4) * 0.015;
+    dJaw.rotation.x = -jaw; dHead.rotation.x = jaw * 0.12;
+    dm.maw.opacity = Math.min(1, 0.2 + jaw * 1.4);
+    const fl = Math.max(-0.2, Math.min(1.3, wingS.x));
+    const open = (0.12 + fl * 0.9) * (1 - aimT * 0.7) * (1 - sprintT * 0.6) + Math.sin(idleT * 1.3) * 0.02;
+    wingL.rotation.y = -open; wingR.rotation.y = open;
+    wingL.rotation.x = wingR.rotation.x = -(0.05 + fl * 0.3);
+    dm.eye.color.copy(NEON_C).multiplyScalar(0.75 + Math.sin(idleT * 3.1) * 0.1 + jaw * 0.4);
+  }
 }
 
 // ---------- HUD (only touch DOM when values change) ----------
@@ -1528,6 +1775,8 @@ $('play').addEventListener('click', () => {
     if (p && typeof p.catch === 'function') p.catch(lockFailed);
   } catch (e) { lockFailed(); }
 });
+document.querySelectorAll('.skinbtn').forEach(b => b.addEventListener('click', e => { e.stopPropagation(); applySkin(b.dataset.skin); initAudio(); sfx.equip(); }));
+applySkin(skin);
 document.addEventListener('pointerlockchange', () => {
   locked = document.pointerLockElement === canvas;
   if (locked) { lockWorked = true; beginPlay(); }
@@ -1574,7 +1823,7 @@ function render() {
   renderer.clear();
   renderer.render(scene, camera);
   renderer.clearDepth();
-  renderer.render(gunScene, gunCam);
+  if (state !== 'start') renderer.render(gunScene, gunCam);
 }
 
 // Warm-up: make every pooled object visible once so all shaders compile now, not on the first shot.
