@@ -1012,102 +1012,182 @@ function updateCasings(dt) {
 }
 
 // ---------- Arsenal: extra weapon viewmodels (share skin materials) ----------
-function handsFor(parent, gripZ, gripY, leftPos, noRight) {
-  if (!noRight) {
+function rightHand(parent, gripZ, gripY) {
   part(parent, 0.062, 0.085, 0.09, 0.004, gripY - 0.01, gripZ, gm.glove).rotation.x = -0.3;
   for (let i = 0; i < 3; i++) part(parent, 0.056, 0.018, 0.032, 0.002, gripY + 0.005 - i * 0.026, gripZ - 0.045 + i * 0.008, gm.glove);
+  part(parent, 0.018, 0.022, 0.065, -0.031, gripY + 0.035, gripZ - 0.02, gm.glove).rotation.x = -0.2;
   limb(parent, new THREE.Vector3(0.01, gripY - 0.035, gripZ + 0.03), new THREE.Vector3(0.28, -0.32, 0.36), 0.58, 0.095, gm.sleeve);
   limb(parent, new THREE.Vector3(0.01, gripY - 0.035, gripZ + 0.03), new THREE.Vector3(0.28, -0.32, 0.36), 0.1, 0.105, gm.chrome);
-  }
-  if (!leftPos) return null;
-  const lh = new THREE.Group(); lh.position.copy(leftPos); parent.add(lh);
+  limb(parent, new THREE.Vector3(-0.04, gripY - 0.045, gripZ + 0.05), new THREE.Vector3(0.28, -0.32, 0.36), 0.3, 0.008, gm.neonC);
+}
+function leftHand(parent, pos) {
+  const lh = new THREE.Group(); lh.position.copy(pos); parent.add(lh);
   part(lh, 0.085, 0.05, 0.11, 0, -0.012, 0, gm.glove);
   for (let i = 0; i < 3; i++) part(lh, 0.02, 0.055, 0.026, 0.05, 0.015, -0.035 + i * 0.03, gm.glove);
+  part(lh, 0.02, 0.05, 0.07, -0.05, 0.012, 0.01, gm.glove);
   limb(lh, new THREE.Vector3(-0.02, -0.03, 0.03), new THREE.Vector3(-0.3, -0.36, 0.42), 0.62, 0.095, gm.sleeve);
   limb(lh, new THREE.Vector3(-0.02, -0.03, 0.03), new THREE.Vector3(-0.3, -0.36, 0.42), 0.1, 0.105, gm.chrome);
+  limb(lh, new THREE.Vector3(-0.065, -0.04, 0.04), new THREE.Vector3(-0.3, -0.36, 0.42), 0.32, 0.008, gm.neonM);
   return lh;
 }
 const GRIP = [[-0.1, -0.045], [-0.035, -0.045], [-0.07, -0.2], [-0.14, -0.2], [-0.155, -0.186], [-0.12, -0.06]];
+const cylX = (par, r, len, x, y, z, m, seg) => { const c = new THREE.Mesh(new THREE.CylinderGeometry(r, r, len, seg || 12), m); c.rotation.z = Math.PI / 2; c.position.set(x, y, z); par.add(c); return c; };
+const shellGeo = new THREE.CylinderGeometry(0.0115, 0.0115, 0.055, 10); shellGeo.rotateX(Math.PI / 2);
+const shellMat = new THREE.MeshStandardMaterial({ color: 0xb8262e, roughness: 0.5, metalness: 0.2 });
+
+// --- sidearm pistol ---
+const mPistol = new THREE.Group(); gunScene.add(mPistol);
+const pSlide = new THREE.Group(); mPistol.add(pSlide);
+profile(pSlide, [[-0.09, 0.077], [0.19, 0.077], [0.215, 0.065], [0.215, 0.035], [-0.09, 0.035]], 0.044, 0.004, gm.shell);
+for (let i = 0; i < 6; i++) part(pSlide, 0.047, 0.026, 0.005, 0, 0.056, 0.03 + i * 0.011, gm.black);
+for (let i = 0; i < 3; i++) part(pSlide, 0.047, 0.012, 0.012, 0, 0.068, -0.13 + i * 0.03, gm.black);
+part(pSlide, 0.003, 0.006, 0.2, 0.0235, 0.058, -0.06, gm.neonC); part(pSlide, 0.003, 0.006, 0.2, -0.0235, 0.058, -0.06, gm.neonC);
+part(pSlide, 0.006, 0.014, 0.008, 0, 0.088, -0.19, gm.neonM);
+part(pSlide, 0.03, 0.013, 0.012, 0, 0.087, 0.075, gm.dark); part(pSlide, 0.006, 0.006, 0.013, 0.009, 0.092, 0.075, gm.neonC); part(pSlide, 0.006, 0.006, 0.013, -0.009, 0.092, 0.075, gm.neonC);
+part(pSlide, 0.012, 0.03, 0.014, 0.022, 0.06, -0.01, gm.black);
+profile(mPistol, [[-0.07, 0.035], [0.205, 0.035], [0.205, 0.004], [0.03, -0.005], [-0.07, 0.0]], 0.04, 0.004, gm.dark);
+profile(mPistol, [[-0.075, 0.005], [-0.005, 0.005], [-0.035, -0.125], [-0.1, -0.125], [-0.105, -0.11]], 0.042, 0.006, gm.rubber);
+cyl(mPistol, 0.011, 0.045, 0, 0.055, -0.238, gm.chrome);
+cyl(mPistol, 0.019, 0.05, 0, 0.055, -0.255, gm.dark, 8);                       // compensator
+for (let i = 0; i < 2; i++) part(mPistol, 0.04, 0.006, 0.008, 0, 0.074, -0.245 - i * 0.018, gm.black);
+part(mPistol, 0.04, 0.018, 0.05, 0, -0.01, -0.15, gm.dark);                    // light rail module
+part(mPistol, 0.03, 0.012, 0.004, 0, -0.01, -0.176, gm.neonC);
+part(mPistol, 0.01, 0.035, 0.06, 0, -0.025, -0.03, gm.chrome);                 // trigger guard
+part(mPistol, 0.016, 0.02, 0.016, 0, 0.042, 0.1, gm.chrome);                   // hammer
+const pMag = new THREE.Group(); const PMAG_REST = new THREE.Vector3(-0.003, -0.06, 0.06); pMag.position.copy(PMAG_REST); pMag.rotation.x = -0.25; mPistol.add(pMag);
+part(pMag, 0.034, 0.12, 0.045, 0, -0.02, 0, gm.dark); part(pMag, 0.04, 0.014, 0.05, 0, -0.085, 0, gm.chrome); part(pMag, 0.036, 0.004, 0.03, 0, -0.07, 0, gm.neonC);
+rightHand(mPistol, 0.09, -0.05);
+const pLeft = leftHand(mPistol, new THREE.Vector3(-0.03, -0.075, 0.05)); pLeft.rotation.z = 0.35;
+const PLEFT_REST = pLeft.position.clone();
+
 // --- sniper ---
 const mSniper = new THREE.Group(); gunScene.add(mSniper);
 profile(mSniper, [[-0.3, 0.035], [0.0, 0.05], [0.38, 0.05], [0.47, 0.03], [0.47, -0.01], [0.1, -0.03], [-0.3, -0.02]], 0.062, 0.005, gm.dark);
 profile(mSniper, [[-0.56, 0.025], [-0.3, 0.035], [-0.3, -0.03], [-0.47, -0.12], [-0.58, -0.12]], 0.05, 0.005, gm.shell, [[[-0.36, 0.0], [-0.36, -0.03], [-0.45, -0.085], [-0.52, -0.085], [-0.52, 0.0]]]);
+profile(mSniper, [[-0.5, 0.06], [-0.34, 0.06], [-0.33, 0.035], [-0.5, 0.03]], 0.054, 0.004, gm.rubber);         // cheek rest
+part(mSniper, 0.06, 0.13, 0.03, 0, -0.045, 0.585, gm.rubber);
 profile(mSniper, GRIP, 0.046, 0.006, gm.rubber);
 cyl(mSniper, 0.0135, 0.64, 0, 0.012, -0.79, gm.chrome);
-cyl(mSniper, 0.025, 0.07, 0, 0.012, -1.1, gm.dark, 8);
-for (let i = 0; i < 3; i++) part(mSniper, 0.054, 0.004, 0.012, 0, 0.012, -1.075 - i * 0.022, gm.black);
+for (let i = 0; i < 4; i++) cyl(mSniper, 0.017, 0.012, 0, 0.012, -0.55 - i * 0.12, gm.dark, 10);          // barrel fluting rings
+cyl(mSniper, 0.027, 0.09, 0, 0.012, -1.11, gm.dark, 8);
+for (let i = 0; i < 3; i++) { part(mSniper, 0.06, 0.006, 0.014, 0, 0.012, -1.09 - i * 0.026, gm.black); part(mSniper, 0.006, 0.06, 0.014, 0, 0.012, -1.09 - i * 0.026, gm.black); }
+cyl(mSniper, 0.028, 0.005, 0, 0.012, -1.158, gm.neonC, 8);
+// scope with turrets and lens
 cyl(mSniper, 0.026, 0.3, 0, 0.105, -0.12, gm.dark);
-cyl(mSniper, 0.036, 0.06, 0, 0.105, -0.3, gm.dark); cyl(mSniper, 0.032, 0.05, 0, 0.105, 0.05, gm.dark);
-cyl(mSniper, 0.03, 0.004, 0, 0.105, -0.332, gm.neonC);
-cyl(mSniper, 0.03, 0.022, 0.0, 0.14, -0.12, gm.chrome, 10).rotation.set(0, 0, 0);
+cyl(mSniper, 0.037, 0.07, 0, 0.105, -0.3, gm.dark); cyl(mSniper, 0.033, 0.05, 0, 0.105, 0.055, gm.dark);
+cyl(mSniper, 0.031, 0.004, 0, 0.105, -0.336, gm.neonC);
+const scopeGlint = new THREE.Mesh(new THREE.CircleGeometry(0.03, 16), new THREE.MeshBasicMaterial({ color: 0x9fe7ff, transparent: true, opacity: 0.55 })); scopeGlint.rotation.y = Math.PI; scopeGlint.position.set(0, 0.105, -0.339); mSniper.add(scopeGlint);
+const tur1 = new THREE.Mesh(new THREE.CylinderGeometry(0.018, 0.018, 0.03, 12), gm.chrome); tur1.position.set(0, 0.145, -0.12); mSniper.add(tur1);
+cylX(mSniper, 0.016, 0.03, 0.04, 0.105, -0.12, gm.chrome);
 part(mSniper, 0.02, 0.04, 0.025, 0, 0.068, -0.03, gm.chrome); part(mSniper, 0.02, 0.04, 0.025, 0, 0.068, -0.21, gm.chrome);
-part(mSniper, 0.045, 0.08, 0.06, 0, -0.065, -0.07, gm.dark);
 for (const sx of [-1, 1]) part(mSniper, 0.003, 0.006, 0.42, sx * 0.034, 0.02, -0.2, gm.neonC);
+// folded bipod
+for (const sx of [-1, 1]) { const leg = part(mSniper, 0.012, 0.012, 0.22, sx * 0.022, -0.035, -0.6, gm.chrome); leg.rotation.y = sx * 0.06; part(mSniper, 0.02, 0.02, 0.02, sx * 0.03, -0.035, -0.71, gm.rubber); }
+part(mSniper, 0.06, 0.02, 0.03, 0, -0.03, -0.49, gm.dark);
+const sMag = new THREE.Group(); const SMAG_REST = new THREE.Vector3(0, -0.065, -0.07); sMag.position.copy(SMAG_REST); mSniper.add(sMag);
+part(sMag, 0.045, 0.08, 0.075, 0, 0, 0, gm.dark); part(sMag, 0.048, 0.012, 0.078, 0, -0.045, 0, gm.chrome); part(sMag, 0.002, 0.04, 0.03, -0.0235, 0, 0, gm.neonC);
 const sniperBolt = new THREE.Group(); sniperBolt.position.set(0.04, 0.035, 0.08); mSniper.add(sniperBolt);
-part(sniperBolt, 0.07, 0.012, 0.012, 0.035, 0, 0, gm.chrome); part(sniperBolt, 0.022, 0.022, 0.022, 0.075, 0, 0, gm.neonC);
-handsFor(mSniper, 0.1, -0.12, new THREE.Vector3(0, -0.055, -0.42));
+part(sniperBolt, 0.07, 0.012, 0.012, 0.035, 0, 0, gm.chrome); part(sniperBolt, 0.024, 0.024, 0.024, 0.075, 0, 0, gm.neonC);
+rightHand(mSniper, 0.1, -0.12);
+const sLeft = leftHand(mSniper, new THREE.Vector3(0, -0.055, -0.42)); const SLEFT_REST = sLeft.position.clone();
+
 // --- shotgun ---
 const mShotgun = new THREE.Group(); gunScene.add(mShotgun);
-profile(mShotgun, [[-0.12, 0.045], [0.26, 0.045], [0.26, -0.035], [-0.12, -0.045]], 0.07, 0.006, gm.dark);
-profile(mShotgun, [[-0.12, 0.035], [-0.46, 0.005], [-0.47, -0.11], [-0.4, -0.11], [-0.12, -0.035]], 0.055, 0.006, gm.shell);
+profile(mShotgun, [[-0.12, 0.05], [0.27, 0.05], [0.29, 0.03], [0.29, -0.035], [-0.12, -0.05]], 0.074, 0.006, gm.dark);
+profile(mShotgun, [[-0.12, 0.04], [-0.47, 0.01], [-0.48, -0.12], [-0.4, -0.12], [-0.12, -0.04]], 0.058, 0.006, gm.shell, [[[-0.2, 0.0], [-0.38, -0.01], [-0.4, -0.08], [-0.24, -0.04]]]);
+part(mShotgun, 0.062, 0.14, 0.03, 0, -0.055, 0.49, gm.rubber);
 profile(mShotgun, GRIP, 0.046, 0.006, gm.rubber);
-cyl(mShotgun, 0.021, 0.52, 0, 0.022, -0.52, gm.chrome);
-cyl(mShotgun, 0.017, 0.42, 0, -0.024, -0.47, gm.dark);
-cyl(mShotgun, 0.025, 0.03, 0, 0.022, -0.79, gm.neonC, 10);
-for (let i = 0; i < 4; i++) cyl(mShotgun, 0.009, 0.05, -0.04, -0.005, -0.02 - i * 0.03, gm.neonM, 8).rotation.set(0, 0, Math.PI / 2);
-for (const sx of [-1, 1]) part(mShotgun, 0.003, 0.006, 0.3, sx * 0.039, 0.025, 0.07, gm.neonC);
-const pump = new THREE.Group(); const PUMP_Z = -0.42; pump.position.set(0, -0.024, PUMP_Z); mShotgun.add(pump);
-part(pump, 0.06, 0.055, 0.17, 0, 0, 0, gm.shell);
-for (let i = 0; i < 4; i++) part(pump, 0.062, 0.006, 0.012, 0, -0.012, -0.06 + i * 0.04, gm.black);
-handsFor(mShotgun, 0.1, -0.12, null);
-handsFor(pump, 0, 0, new THREE.Vector3(0, -0.035, 0), true);
+cyl(mShotgun, 0.023, 0.56, 0, 0.024, -0.56, gm.chrome);
+for (let i = 0; i < 6; i++) { const h = part(mShotgun, 0.05, 0.012, 0.05, 0, 0.052, -0.36 - i * 0.065, gm.dark); }  // heat shield ribs
+part(mShotgun, 0.054, 0.006, 0.42, 0, 0.06, -0.52, gm.dark);
+for (let i = 0; i < 5; i++) part(mShotgun, 0.056, 0.008, 0.03, 0, 0.062, -0.38 - i * 0.065, gm.black);
+cyl(mShotgun, 0.018, 0.44, 0, -0.026, -0.5, gm.dark);
+cyl(mShotgun, 0.032, 0.06, 0, 0.024, -0.86, gm.dark, 8);                         // muzzle brake
+for (let i = 0; i < 3; i++) part(mShotgun, 0.07, 0.008, 0.01, 0, 0.024, -0.84 - i * 0.018, gm.black);
+cyl(mShotgun, 0.033, 0.006, 0, 0.024, -0.892, gm.neonC, 8);
+// side shell carrier with real shells
+part(mShotgun, 0.006, 0.05, 0.16, -0.041, 0.0, 0.05, gm.dark);
+for (let i = 0; i < 5; i++) { const sh = new THREE.Mesh(shellGeo, shellMat); sh.rotation.set(0, 0, Math.PI / 2); sh.position.set(-0.052, 0.0, -0.01 + i * 0.03); sh.rotation.x = Math.PI / 2; mShotgun.add(sh); const cap = part(mShotgun, 0.012, 0.024, 0.024, -0.064, 0.0, -0.01 + i * 0.03, gm.brass); }
+part(mShotgun, 0.003, 0.006, 0.3, 0.039, 0.03, 0.07, gm.neonC); part(mShotgun, 0.003, 0.006, 0.3, -0.039, 0.03, 0.07, gm.neonC);
+part(mShotgun, 0.002, 0.03, 0.08, 0.04, -0.01, 0.0, gm.black);                    // loading port
+const pump = new THREE.Group(); const PUMP_Z = -0.44; pump.position.set(0, -0.026, PUMP_Z); mShotgun.add(pump);
+part(pump, 0.064, 0.058, 0.18, 0, 0, 0, gm.shell);
+for (let i = 0; i < 5; i++) part(pump, 0.066, 0.006, 0.012, 0, -0.014, -0.07 + i * 0.035, gm.black);
+part(pump, 0.066, 0.008, 0.16, 0, 0.026, 0, gm.neonM);
+rightHand(mShotgun, 0.1, -0.12);
+const pumpHand = leftHand(pump, new THREE.Vector3(0, -0.035, 0));
+const loadHand = new THREE.Group(); mShotgun.add(loadHand); loadHand.visible = false;
+{ const lh = leftHand(loadHand, new THREE.Vector3(0, 0, 0)); lh.rotation.z = -0.4; const s = new THREE.Mesh(shellGeo, shellMat); s.position.set(0.03, 0.035, -0.01); loadHand.add(s); part(loadHand, 0.024, 0.024, 0.012, 0.03, 0.035, 0.022, gm.brass); }
+const LOAD_PORT = new THREE.Vector3(0.05, -0.02, -0.02), LOAD_BELOW = new THREE.Vector3(0.09, -0.2, 0.05);
+
 // --- energy blade ---
 const mBlade = new THREE.Group(); gunScene.add(mBlade);
 const bladeRoot = new THREE.Group(); mBlade.add(bladeRoot);
 {
-  const sh = new THREE.Shape(); sh.moveTo(-0.032, 0); sh.lineTo(0.032, 0); sh.lineTo(0.026, 0.72); sh.lineTo(0, 0.9); sh.lineTo(-0.03, 0.7); sh.lineTo(-0.032, 0);
-  const g = new THREE.ExtrudeGeometry(sh, { depth: 0.008, bevelEnabled: true, bevelThickness: 0.003, bevelSize: 0.004, bevelSegments: 1 }); g.translate(0, 0.12, -0.004);
+  const sh = new THREE.Shape(); sh.moveTo(-0.034, 0); sh.lineTo(0.034, 0); sh.lineTo(0.03, 0.5); sh.lineTo(0.022, 0.76); sh.lineTo(0, 0.94); sh.lineTo(-0.028, 0.72); sh.lineTo(-0.034, 0);
+  sh.holes.push(new THREE.Path([new THREE.Vector2(-0.008, 0.12), new THREE.Vector2(0.008, 0.12), new THREE.Vector2(0.006, 0.62), new THREE.Vector2(-0.006, 0.62)]));
+  const g = new THREE.ExtrudeGeometry(sh, { depth: 0.008, bevelEnabled: true, bevelThickness: 0.003, bevelSize: 0.004, bevelSegments: 1 }); g.translate(0, 0.13, -0.004);
   bladeRoot.add(new THREE.Mesh(g, gm.chrome));
-  const edge = new THREE.Mesh(boxGeo, gm.neonC); edge.scale.set(0.006, 0.6, 0.012); edge.position.set(0.03, 0.47, 0); edge.rotation.z = -0.008; bladeRoot.add(edge);
-  const fuller = new THREE.Mesh(boxGeo, gm.neonM); fuller.scale.set(0.01, 0.45, 0.014); fuller.position.set(0, 0.38, 0); bladeRoot.add(fuller);
-  part(bladeRoot, 0.17, 0.028, 0.05, 0, 0.115, 0, gm.dark);
-  part(bladeRoot, 0.03, 0.03, 0.055, 0.085, 0.115, 0, gm.neonC); part(bladeRoot, 0.03, 0.03, 0.055, -0.085, 0.115, 0, gm.neonC);
-  const hd = new THREE.Mesh(new THREE.CylinderGeometry(0.018, 0.018, 0.2, 10), gm.rubber); hd.position.y = 0.0; bladeRoot.add(hd);
-  part(bladeRoot, 0.04, 0.03, 0.04, 0, -0.11, 0, gm.chrome);
+  const core = new THREE.Mesh(boxGeo, gm.neonM); core.scale.set(0.01, 0.5, 0.006); core.position.set(0, 0.5, 0); bladeRoot.add(core);
+  const edge = new THREE.Mesh(boxGeo, gm.neonC); edge.scale.set(0.006, 0.64, 0.014); edge.position.set(0.032, 0.45, 0); bladeRoot.add(edge);
+  const edge2 = new THREE.Mesh(boxGeo, gm.neonC); edge2.scale.set(0.006, 0.5, 0.014); edge2.position.set(-0.033, 0.4, 0); bladeRoot.add(edge2);
+  part(bladeRoot, 0.2, 0.03, 0.055, 0, 0.12, 0, gm.dark);
+  for (const sx of [-1, 1]) { const w = part(bladeRoot, 0.06, 0.02, 0.05, sx * 0.11, 0.135, 0, gm.dark); w.rotation.z = sx * 0.35; part(bladeRoot, 0.025, 0.025, 0.058, sx * 0.1, 0.12, 0, gm.neonC); }
+  part(bladeRoot, 0.05, 0.04, 0.05, 0, 0.145, 0, gm.chrome);                    // emitter
+  const hd = new THREE.Mesh(new THREE.CylinderGeometry(0.018, 0.018, 0.2, 10), gm.rubber); bladeRoot.add(hd);
+  for (let i = 0; i < 4; i++) { const r = new THREE.Mesh(new THREE.TorusGeometry(0.019, 0.004, 6, 14), gm.chrome); r.rotation.x = Math.PI / 2; r.position.y = -0.07 + i * 0.045; bladeRoot.add(r); }
+  part(bladeRoot, 0.042, 0.035, 0.042, 0, -0.115, 0, gm.chrome); part(bladeRoot, 0.02, 0.02, 0.044, 0, -0.115, 0, gm.neonM);
   part(bladeRoot, 0.065, 0.09, 0.09, 0.0, 0.0, 0.0, gm.glove);
   limb(bladeRoot, new THREE.Vector3(0.0, -0.04, 0.03), new THREE.Vector3(0.25, -0.45, 0.3), 0.6, 0.095, gm.sleeve);
+  limb(bladeRoot, new THREE.Vector3(0.0, -0.04, 0.03), new THREE.Vector3(0.25, -0.45, 0.3), 0.1, 0.105, gm.chrome);
 }
+// swing trail (ribbon following the blade)
+const TRAIL_N = 14;
+const trailPos = new Float32Array(TRAIL_N * 2 * 3), trailAlpha = new Float32Array(TRAIL_N * 2);
+const trailGeo = new THREE.BufferGeometry();
+trailGeo.setAttribute('position', new THREE.BufferAttribute(trailPos, 3).setUsage(THREE.DynamicDrawUsage));
+trailGeo.setAttribute('alpha', new THREE.BufferAttribute(trailAlpha, 1).setUsage(THREE.DynamicDrawUsage));
+{ const idx = []; for (let i = 0; i < TRAIL_N - 1; i++) { const a = i * 2; idx.push(a, a + 1, a + 2, a + 1, a + 3, a + 2); } trailGeo.setIndex(idx); }
+const trailMat = new THREE.ShaderMaterial({
+  uniforms: { color: { value: new THREE.Color(0x3be8ff) } }, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide,
+  vertexShader: 'attribute float alpha; varying float vA; void main(){ vA = alpha; gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0); }',
+  fragmentShader: 'uniform vec3 color; varying float vA; void main(){ gl_FragColor = vec4(color * vA, vA); }',
+});
+const trail = new THREE.Mesh(trailGeo, trailMat); trail.frustumCulled = false; gunScene.add(trail);
+const _tb = new THREE.Vector3(), _tt = new THREE.Vector3();
+let trailLife = 0;
+function updateTrail(dt, active) {
+  trailLife = active ? 1 : Math.max(0, trailLife - dt * 6);
+  for (let i = TRAIL_N - 1; i > 0; i--) { for (let k = 0; k < 6; k++) trailPos[i * 6 + k] = trailPos[(i - 1) * 6 + k]; }
+  bladeRoot.updateMatrixWorld(true);
+  _tb.set(0, 0.25, 0); bladeRoot.localToWorld(_tb); _tt.set(0, 1.0, 0); bladeRoot.localToWorld(_tt);
+  trailPos[0] = _tb.x; trailPos[1] = _tb.y; trailPos[2] = _tb.z; trailPos[3] = _tt.x; trailPos[4] = _tt.y; trailPos[5] = _tt.z;
+  for (let i = 0; i < TRAIL_N; i++) { const a = trailLife * Math.pow(1 - i / TRAIL_N, 1.6) * 0.85; trailAlpha[i * 2] = a * 0.25; trailAlpha[i * 2 + 1] = a; }
+  trailMat.uniforms.color.value.copy(NEON_C);
+  trailGeo.attributes.position.needsUpdate = true; trailGeo.attributes.alpha.needsUpdate = true;
+  trail.visible = trailLife > 0.01 && mBlade.visible;
+}
+
 // --- rocket launcher (ultimate) ---
 const mRocket = new THREE.Group(); gunScene.add(mRocket);
 cyl(mRocket, 0.066, 0.95, 0.02, 0.03, -0.42, gm.dark, 16);
-cyl(mRocket, 0.077, 0.05, 0.02, 0.03, -0.9, gm.neonC, 16);
-cyl(mRocket, 0.08, 0.08, 0.02, 0.03, 0.06, gm.shell, 16);
-part(mRocket, 0.11, 0.05, 0.5, 0.02, 0.105, -0.42, gm.shell);
-part(mRocket, 0.112, 0.006, 0.48, 0.02, 0.131, -0.42, gm.neonM);
-part(mRocket, 0.035, 0.07, 0.05, -0.06, 0.13, -0.55, gm.chrome);
-part(mRocket, 0.006, 0.03, 0.006, -0.06, 0.18, -0.55, gm.neonM);
-const rocketTip = new THREE.Mesh(new THREE.ConeGeometry(0.045, 0.12, 12), gm.neonM); rocketTip.rotation.x = -Math.PI / 2; rocketTip.position.set(0.02, 0.03, -0.93); mRocket.add(rocketTip);
+for (let i = 0; i < 4; i++) cyl(mRocket, 0.069, 0.02, 0.02, 0.03, -0.1 - i * 0.18, gm.chrome, 16);
+cyl(mRocket, 0.078, 0.06, 0.02, 0.03, -0.9, gm.neonC, 16);
+cyl(mRocket, 0.084, 0.1, 0.02, 0.03, 0.08, gm.shell, 16);
+for (let i = 0; i < 6; i++) { const v = part(mRocket, 0.02, 0.06, 0.012, 0.02 + Math.cos(i) * 0.07, 0.03 + Math.sin(i) * 0.07, 0.14, gm.black); }
+part(mRocket, 0.115, 0.055, 0.52, 0.02, 0.105, -0.42, gm.shell);
+for (let i = 0; i < 6; i++) part(mRocket, 0.118, 0.012, 0.03, 0.02, 0.105, -0.62 + i * 0.08, i % 2 ? gm.black : gm.neonM);
+part(mRocket, 0.12, 0.006, 0.5, 0.02, 0.134, -0.42, gm.neonM);
+// optic with glowing screen
+part(mRocket, 0.04, 0.08, 0.06, -0.065, 0.13, -0.5, gm.dark);
+const scr = new THREE.Mesh(new THREE.PlaneGeometry(0.032, 0.05), new THREE.MeshBasicMaterial({ color: 0xff3ad0 })); scr.position.set(-0.065, 0.135, -0.469); mRocket.add(scr);
+part(mRocket, 0.006, 0.03, 0.006, -0.065, 0.185, -0.5, gm.neonM);
+part(mRocket, 0.1, 0.05, 0.16, 0.02, -0.02, 0.2, gm.rubber);                       // shoulder pad
+const rocketTip = new THREE.Mesh(new THREE.ConeGeometry(0.045, 0.14, 12), gm.neonM); rocketTip.rotation.x = -Math.PI / 2; rocketTip.position.set(0.02, 0.03, -0.94); mRocket.add(rocketTip);
 profile(mRocket, GRIP, 0.046, 0.006, gm.rubber).position.set(0.02, -0.04, 0);
-handsFor(mRocket, 0.1, -0.16, new THREE.Vector3(0.02, -0.05, -0.45));
-
-// --- sidearm pistol (starting weapon) ---
-const mPistol = new THREE.Group(); gunScene.add(mPistol);
-const pSlide = new THREE.Group(); mPistol.add(pSlide);
-profile(pSlide, [[-0.09, 0.075], [0.2, 0.075], [0.22, 0.06], [0.22, 0.035], [-0.09, 0.035]], 0.044, 0.004, gm.shell);
-for (let i = 0; i < 5; i++) part(pSlide, 0.047, 0.03, 0.006, 0, 0.055, 0.04 + i * 0.012, gm.black);
-part(pSlide, 0.003, 0.006, 0.2, 0.024, 0.058, -0.06, gm.neonC); part(pSlide, 0.003, 0.006, 0.2, -0.024, 0.058, -0.06, gm.neonC);
-part(pSlide, 0.012, 0.012, 0.01, 0, 0.087, -0.2, gm.neonM);
-part(pSlide, 0.03, 0.012, 0.012, 0, 0.087, 0.07, gm.dark);
-profile(mPistol, [[-0.07, 0.035], [0.2, 0.035], [0.2, 0.0], [0.03, -0.005], [-0.07, 0.0]], 0.04, 0.004, gm.dark);
-profile(mPistol, [[-0.075, 0.005], [-0.005, 0.005], [-0.035, -0.125], [-0.1, -0.125], [-0.105, -0.11]], 0.042, 0.006, gm.rubber);
-cyl(mPistol, 0.011, 0.04, 0, 0.055, -0.235, gm.chrome);
-part(mPistol, 0.01, 0.035, 0.06, 0, -0.025, -0.03, gm.chrome);
-part(mPistol, 0.044, 0.012, 0.05, 0, -0.008, -0.13, gm.neonC);
-part(mPistol, 0.062, 0.085, 0.09, 0.004, -0.06, 0.085, gm.glove).rotation.x = -0.25;
-limb(mPistol, new THREE.Vector3(0.01, -0.09, 0.11), new THREE.Vector3(0.28, -0.32, 0.36), 0.58, 0.095, gm.sleeve);
-limb(mPistol, new THREE.Vector3(0.01, -0.09, 0.11), new THREE.Vector3(0.28, -0.32, 0.36), 0.1, 0.105, gm.chrome);
-part(mPistol, 0.07, 0.08, 0.08, -0.035, -0.07, 0.07, gm.glove).rotation.z = 0.3;
-limb(mPistol, new THREE.Vector3(-0.05, -0.1, 0.1), new THREE.Vector3(-0.3, -0.36, 0.42), 0.62, 0.095, gm.sleeve);
+profile(mRocket, GRIP, 0.046, 0.006, gm.rubber).position.set(0.02, -0.04, -0.42);
+rightHand(mRocket, 0.1, -0.16);
+leftHand(mRocket, new THREE.Vector3(0.02, -0.17, -0.43));
 
 const models = { pistol: mPistol, rifle: gun, sniper: mSniper, shotgun: mShotgun, blade: mBlade, rocket: mRocket };
 for (const k of ['pistol', 'sniper', 'shotgun', 'blade', 'rocket']) models[k].visible = false;
@@ -1666,23 +1746,6 @@ async function buildWyrmBank() {
 }
 
 // ---- arsenal + skill sounds ----
-function SNIPER_S(K) {
-  const out = K.out, drv = K.drive(3.2, K.gain(0.85, out)), room = K.room(2.4, 2.2, 0.32), slap = K.slap();
-  K.noise(drv, { type: 'highpass', f0: 5200, d: 0.016, peak: 1 });
-  K.osc(drv, { f0: 120, f1: 28, d: 0.28, peak: 1 });
-  K.noise([drv, room, slap], { type: 'bandpass', f0: 2000, f1: 260, q: 0.8, d: 0.32, peak: 0.8 });
-  K.osc([out, room], { f0: 2600, f1: 140, d: 0.22, peak: 0.25, fm: { f0: 3100, f1: 300, i0: 2200, i1: 0 } });
-  K.noise([room, out], { type: 'lowpass', f0: 1400, f1: 90, a: 0.005, d: 1.4, peak: 0.35 });
-  K.osc(out, { f0: 48, f1: 30, d: 0.5, peak: 0.55 });
-}
-function SHOTGUN_S(K) {
-  const out = K.out, drv = K.drive(3.4, K.gain(0.85, out)), room = K.room(1.4, 2.6, 0.26), slap = K.slap();
-  K.noise(drv, { type: 'highpass', f0: 3500, d: 0.02, peak: 1 });
-  K.noise([drv, room, slap], { type: 'lowpass', f0: 3200, f1: 180, d: 0.36, peak: 1 });
-  K.osc(drv, { f0: 95, f1: 32, d: 0.22, peak: 1 });
-  for (let i = 0; i < 12; i++) K.noise(out, { type: 'bandpass', f0: R(2500, 7000), q: 4, t: R(0, 0.12), d: 0.012, peak: R(0.15, 0.35), pan: R(-0.8, 0.8) });
-  K.osc(out, { f0: 55, f1: 36, d: 0.35, peak: 0.5 });
-}
 function PUMP_S(K) {
   K.noise(K.out, { type: 'bandpass', f0: 1500, q: 2, d: 0.05, peak: 0.8 }); K.noise(K.out, { type: 'bandpass', f0: 900, f1: 600, q: 1.5, t: 0.02, d: 0.09, peak: 0.35 });
   K.noise(K.out, { type: 'bandpass', f0: 2600, q: 2.5, t: 0.17, d: 0.04, peak: 0.9 }); K.osc(K.out, { type: 'square', f0: 700, f1: 500, t: 0.17, d: 0.025, peak: 0.15 });
@@ -1690,17 +1753,6 @@ function PUMP_S(K) {
 function BOLT_S(K) {
   K.noise(K.out, { type: 'bandpass', f0: 2200, q: 2, d: 0.04, peak: 0.7 }); K.noise(K.out, { type: 'bandpass', f0: 1200, f1: 800, t: 0.06, d: 0.1, peak: 0.3 });
   K.noise(K.out, { type: 'bandpass', f0: 3000, q: 3, t: 0.22, d: 0.035, peak: 0.8 }); K.noise(K.out, { type: 'highpass', f0: 5000, t: 0.3, d: 0.012, peak: 0.6 });
-}
-function SWING_S(K) {
-  K.noise(K.out, { type: 'bandpass', f0: 500, f1: 2600, q: 2.5, a: 0.08, d: 0.16, peak: 0.6, pan: -0.4 });
-  K.osc(K.out, { type: 'sawtooth', f0: 220, f1: 480, a: 0.06, d: 0.18, peak: 0.06, lp: 1500 });
-}
-function SLASH_S(K) {
-  const room = K.room(0.7, 3, 0.25);
-  K.noise([K.out, room], { type: 'highpass', f0: 4200, d: 0.16, peak: 0.6 });
-  K.noise(K.drive(2.5, K.gain(0.8, K.out)), { type: 'lowpass', f0: 900, f1: 150, d: 0.16, peak: 0.9 });
-  for (const f of [2310, 3760, 5230]) K.osc([K.out, room], { f0: f, f1: f * 0.97, d: 0.2, peak: 0.07 });
-  K.osc(K.out, { f0: 140, f1: 50, d: 0.12, peak: 0.6 });
 }
 function SWAP_S(K) { K.noise(K.out, { type: 'bandpass', f0: 1800, q: 2, d: 0.035, peak: 0.6 }); K.noise(K.out, { type: 'bandpass', f0: 2800, q: 3, t: 0.09, d: 0.03, peak: 0.55 }); }
 function THROW_S(K) { K.noise(K.out, { type: 'bandpass', f0: 400, f1: 1800, q: 2, a: 0.05, d: 0.18, peak: 0.45 }); K.noise(K.out, { type: 'highpass', f0: 4500, d: 0.01, peak: 0.4 }); }
@@ -1749,15 +1801,6 @@ function ULT_ON_S(K) {
   for (let i = 0; i < 4; i++) K.noise(K.out, { type: 'bandpass', f0: 2000 + i * 600, q: 3, t: 0.1 + i * 0.08, d: 0.04, peak: 0.5 });
 }
 
-function PISTOL_S(K) {
-  const drv = K.drive(2.6, K.gain(0.85, K.out)), room = K.room(0.9, 2.8, 0.2), slap = K.slap();
-  K.noise(drv, { type: 'highpass', f0: 5000, d: 0.012, peak: 0.9 });
-  K.osc(drv, { f0: 210, f1: 60, d: 0.09, peak: 0.9 });
-  K.noise([drv, room, slap], { type: 'bandpass', f0: 2900, f1: 800, q: 1, d: 0.11, peak: 0.6 });
-  K.osc([K.out, room], { f0: 1900, f1: 400, d: 0.07, peak: 0.12, fm: { f0: 2600, i0: 900, i1: 0 } });
-  K.noise([room, K.out], { type: 'lowpass', f0: 1000, f1: 200, d: 0.3, peak: 0.12 });
-  K.noise(K.out, { type: 'highpass', f0: 4500, t: 0.06, d: 0.012, peak: 0.25 });
-}
 function CHEST_OPEN_S(K) {
   const room = K.room(0.9, 2.8, 0.3);
   K.osc(K.drive(2, K.gain(0.8, K.out)), { f0: 120, f1: 60, d: 0.15, peak: 0.8 });
@@ -1776,6 +1819,68 @@ function CHEST_TAKE_S(K) {
   K.noise(K.out, { type: 'bandpass', f0: 2200, q: 2, d: 0.035, peak: 0.7 }); K.noise(K.out, { type: 'bandpass', f0: 3200, q: 3, t: 0.08, d: 0.03, peak: 0.6 });
   reese(K, K.out, { t: 0.05, f: 82, notes: [1, 2], d: 0.35, peak: 0.12, c0: 300, c1: 3000, c2: 3000, glide: 2 });
 }
+function echoes(K, dest, list) { // distant reflections: [delay, pan, gain]
+  const inp = K.c.createGain();
+  for (const [dt, pan, v] of list) { const dl = K.c.createDelay(2); dl.delayTime.value = dt; const f = K.c.createBiquadFilter(); f.type = 'lowpass'; f.frequency.value = 2200 - dt * 1200; const g = K.c.createGain(); g.gain.value = v; inp.connect(dl); dl.connect(f); f.connect(g); const p = K.c.createStereoPanner(); p.pan.value = pan; g.connect(p); p.connect(dest); }
+  return inp;
+}
+function PISTOL_S(K) {
+  const drv = K.drive(2.8, K.gain(0.85, K.out)), room = K.room(1, 2.8, 0.22), slap = K.slap();
+  K.noise(drv, { type: 'highpass', f0: 5200, d: 0.011, peak: 1 });
+  K.osc(drv, { f0: 230, f1: 62, d: 0.1, peak: 0.95 });
+  K.noise([drv, room, slap], { type: 'bandpass', f0: 3000, f1: 750, q: 1, d: 0.12, peak: 0.65 });
+  K.osc([K.out, room], { f0: 2100, f1: 380, d: 0.075, peak: 0.13, fm: { f0: 2700, i0: 1000, i1: 0 } });
+  K.noise([room, K.out], { type: 'lowpass', f0: 1100, f1: 180, d: 0.38, peak: 0.14 });
+  K.noise(K.out, { type: 'bandpass', f0: 2600, q: 3, t: 0.045, d: 0.02, peak: 0.35 });          // slide cycling
+  K.noise(K.out, { type: 'bandpass', f0: 3600, q: 3, t: 0.075, d: 0.018, peak: 0.3 });
+  K.osc(K.out, { f0: 70, f1: 45, d: 0.15, peak: 0.3 });
+}
+function SNIPER_S(K) {
+  const out = K.out, drv = K.drive(3.4, K.gain(0.85, out)), room = K.room(2.6, 2.1, 0.3), slap = K.slap();
+  const ech = echoes(K, out, [[0.32, -0.7, 0.22], [0.55, 0.6, 0.16], [0.85, -0.3, 0.1], [1.2, 0.4, 0.06]]);
+  K.noise([drv, ech], { type: 'highpass', f0: 5500, d: 0.014, peak: 1 });                       // supersonic crack
+  K.osc([drv, ech], { f0: 130, f1: 26, d: 0.32, peak: 1 });
+  K.noise([drv, room, slap, ech], { type: 'bandpass', f0: 2100, f1: 240, q: 0.8, d: 0.34, peak: 0.85 });
+  K.osc([out, room], { f0: 2700, f1: 130, d: 0.24, peak: 0.24, fm: { f0: 3200, f1: 300, i0: 2400, i1: 0 } });
+  K.noise([room, out], { type: 'lowpass', f0: 1300, f1: 70, a: 0.006, d: 1.6, peak: 0.38 });      // rolling tail
+  K.osc(out, { f0: 46, f1: 28, d: 0.6, peak: 0.6 });
+}
+function SHOTGUN_S(K) {
+  const out = K.out, drv = K.drive(4, K.gain(0.9, out)), room = K.room(1.6, 2.4, 0.3), slap = K.slap();
+  const ech = echoes(K, out, [[0.22, -0.6, 0.18], [0.41, 0.6, 0.11]]);
+  K.noise([drv, ech], { type: 'highpass', f0: 3200, d: 0.022, peak: 1 });
+  K.noise(drv, { type: 'highpass', f0: 2600, t: 0.012, d: 0.02, peak: 0.8 });                     // double transient
+  K.noise([drv, room, slap, ech], { type: 'lowpass', f0: 3600, f1: 150, d: 0.42, peak: 1 });
+  K.osc([drv, ech], { f0: 90, f1: 28, d: 0.28, peak: 1 });
+  K.osc(out, { f0: 52, f1: 32, d: 0.5, peak: 0.7 });                                              // chest-thumping sub
+  for (let i = 0; i < 16; i++) K.noise(out, { type: 'bandpass', f0: R(2500, 8000), q: 4, t: R(0, 0.14), d: 0.012, peak: R(0.15, 0.35), pan: R(-0.9, 0.9) });
+  K.noise([room, out], { type: 'lowpass', f0: 900, f1: 90, a: 0.01, d: 0.9, peak: 0.25 });
+}
+function SHELL_IN_S(K) {
+  K.noise(K.out, { type: 'bandpass', f0: 1100, f1: 700, q: 1.5, d: 0.06, peak: 0.45 });
+  K.noise(K.out, { type: 'bandpass', f0: 2400, q: 3, t: 0.05, d: 0.025, peak: 0.6 });
+  K.osc(K.out, { type: 'square', f0: 650, f1: 480, t: 0.05, d: 0.02, peak: 0.12 });
+}
+function PMAG_OUT_S(K) { K.noise(K.out, { type: 'bandpass', f0: 2400, q: 2.5, d: 0.03, peak: 0.6 }); K.noise(K.out, { type: 'bandpass', f0: 1200, f1: 700, t: 0.02, d: 0.1, peak: 0.25 }); }
+function PMAG_IN_S(K) { K.noise(K.out, { type: 'bandpass', f0: 900, q: 1.5, d: 0.05, peak: 0.5 }); K.noise(K.out, { type: 'bandpass', f0: 3000, q: 3, t: 0.04, d: 0.025, peak: 0.7 }); K.osc(K.out, { f0: 160, f1: 90, d: 0.07, peak: 0.4 }); }
+function SLIDE_S(K) { K.noise(K.out, { type: 'bandpass', f0: 1800, f1: 1100, q: 2, d: 0.07, peak: 0.5 }); K.noise(K.out, { type: 'bandpass', f0: 3200, q: 3, t: 0.09, d: 0.03, peak: 0.85 }); K.osc(K.out, { f0: 200, f1: 80, t: 0.09, d: 0.08, peak: 0.4 }); }
+function BOLT_OPEN_S(K) { K.noise(K.out, { type: 'bandpass', f0: 2600, q: 3, d: 0.03, peak: 0.7 }); K.noise(K.out, { type: 'bandpass', f0: 1300, f1: 800, q: 2, t: 0.05, d: 0.12, peak: 0.35 }); }
+function BOLT_CLOSE_S(K) { K.noise(K.out, { type: 'bandpass', f0: 900, f1: 1500, q: 2, d: 0.1, peak: 0.35 }); K.noise(K.out, { type: 'bandpass', f0: 3400, q: 3, t: 0.11, d: 0.03, peak: 0.9 }); K.osc(K.out, { f0: 180, f1: 70, t: 0.11, d: 0.08, peak: 0.4 }); }
+function SWING_S(K, dir) {
+  K.noise(K.out, { type: 'bandpass', f0: 450, f1: 2800, q: 2.5, a: 0.07, d: 0.17, peak: 0.6, pan: -0.5 * dir });
+  K.noise(K.out, { type: 'bandpass', f0: 900, f1: 4200, q: 4, a: 0.08, d: 0.12, peak: 0.25, pan: 0.5 * dir });
+  K.osc(K.out, { type: 'sawtooth', f0: 200 * (dir > 0 ? 1 : 1.2), f1: 520, a: 0.06, d: 0.2, peak: 0.07, lp: 1600 });   // energy hum sweep
+}
+function SLASH_S(K) {
+  const room = K.room(0.8, 3, 0.25);
+  K.noise([K.out, room], { type: 'highpass', f0: 4200, d: 0.18, peak: 0.6 });
+  K.noise(K.drive(2.8, K.gain(0.85, K.out)), { type: 'lowpass', f0: 1000, f1: 140, d: 0.18, peak: 1 });
+  for (const f of [2310, 3760, 5230]) K.osc([K.out, room], { f0: f, f1: f * 0.96, d: 0.16, peak: 0.06 });
+  K.osc([K.out, room], { f0: 1800, f1: 260, d: 0.14, peak: 0.16, fm: { f0: 2400, i0: 1200, i1: 0 } });       // energy sizzle
+  for (let i = 0; i < 8; i++) K.noise(K.out, { type: 'bandpass', f0: R(3000, 8000), q: 4, t: R(0, 0.12), d: 0.01, peak: 0.25, pan: R(-0.7, 0.7) });
+  K.osc(K.out, { f0: 150, f1: 48, d: 0.14, peak: 0.7 });
+}
+
 (async function buildBank() {
   if (!OAC) return;
   try {
@@ -1795,7 +1900,7 @@ function CHEST_TAKE_S(K) {
     bank.finisher = await renderSound(3.4, FINISHER);
   } catch (e) { console.warn('sound bank failed', e); }
   try {
-    const list = [['sniper', 1.8, SNIPER_S], ['shotgun', 1.2, SHOTGUN_S], ['pump', 0.4, PUMP_S], ['bolt', 0.45, BOLT_S], ['swing', 0.4, SWING_S], ['slash', 0.6, SLASH_S], ['swap', 0.2, SWAP_S],
+    const list = [['sniper', 2.4, SNIPER_S], ['shotgun', 1.6, SHOTGUN_S], ['pump', 0.4, PUMP_S], ['bolt', 0.45, BOLT_S], ['swing', 0.4, K => SWING_S(K, 1)], ['swingL', 0.4, K => SWING_S(K, -1)], ['shellIn', 0.15, SHELL_IN_S], ['pMagOut', 0.2, PMAG_OUT_S], ['pMagIn', 0.2, PMAG_IN_S], ['slide', 0.25, SLIDE_S], ['boltOpen', 0.25, BOLT_OPEN_S], ['boltClose', 0.3, BOLT_CLOSE_S], ['slash', 0.6, SLASH_S], ['swap', 0.2, SWAP_S],
       ['throwNade', 0.3, THROW_S], ['bounce', 0.1, BOUNCE_S], ['stunB', 1.0, STUN_S], ['freezeB', 1.4, FREEZE_S], ['flashB', 1.2, FLASH_S], ['blind', 2.4, BLIND_S],
       ['rocketFire', 0.9, ROCKET_FIRE_S], ['rocketB', 2.6, ROCKET_BOOM_S], ['ultReady', 1.0, ULT_READY_S], ['ultOn', 1.3, ULT_ON_S],
       ['pistol', 0.6, PISTOL_S], ['chestOpen', 0.7, CHEST_OPEN_S], ['chestTick', 0.08, CHEST_TICK_S], ['chestDing', 1.0, CHEST_DING_S], ['chestTake', 0.5, CHEST_TAKE_S]];
@@ -1859,7 +1964,9 @@ const sfx = {
   sniper() { play('sniper', 1.0, R(0.97, 1.03)); },
   shotgun() { play('shotgun', 1.0, R(0.96, 1.04)); },
   pump() { play('pump', 0.8); }, bolt() { play('bolt', 0.75); },
-  swing() { play('swing', 0.75, R(0.9, 1.1)); }, slash() { play('slash', 0.9, R(0.95, 1.05)); },
+  swing(side) { play(side < 0 ? 'swingL' : 'swing', 0.75, R(0.92, 1.08)); },
+  shellIn() { play('shellIn', 0.75, R(0.95, 1.05)); }, pMagOut() { play('pMagOut', 0.7); }, pMagIn() { play('pMagIn', 0.8); }, slide() { play('slide', 0.85); },
+  boltOpen() { play('boltOpen', 0.75); }, boltClose() { play('boltClose', 0.85); }, slash() { play('slash', 0.9, R(0.95, 1.05)); },
   swap() { play('swap', 0.55); }, throwNade() { play('throwNade', 0.6); },
   bounce(d) { play('bounce', 0.5 / (1 + d * 0.1), R(0.9, 1.15)); },
   blast(kind, d) { play({ stun: 'stunB', freeze: 'freezeB', flash: 'flashB', rocket: 'rocketB' }[kind], 1 / (1 + d * 0.04), 1, 600 + 14000 / (1 + d * 0.08)); },
@@ -2024,8 +2131,20 @@ function reload() {
   if (reloading || ammo === MAG || state !== 'play' || down) return;
   if (cur !== 'rifle') {
     const W = WEAP[cur]; if (!W.reload) return;
-    reloading = true; reloadT = 0; reloadEv = 0; firing = false; inspectT = -1; reloadEmpty = false; reloadDur = W.reload;
-    reloadEvents = [{ t: 0.3, f: () => sfx.magOut() }, { t: W.reload - 0.45, f: () => { sfx.magIn(); ammo = MAG; gunJolt = 1; } }];
+    reloading = true; reloadT = 0; reloadEv = 0; firing = false; inspectT = -1; reloadEmpty = ammo === 0;
+    if (cur === 'pistol') {
+      reloadDur = reloadEmpty ? 1.45 : 1.15;
+      reloadEvents = [{ t: 0.2, f: () => sfx.pMagOut() }, { t: 0.76, f: () => { sfx.pMagIn(); ammo = MAG; gunJolt = 0.8; } }];
+      if (reloadEmpty) reloadEvents.push({ t: 1.05, f: () => { sfx.slide(); sp.z.v += 0.4; sp.rz.v -= 0.8; } });
+    } else if (cur === 'sniper') {
+      reloadDur = 2.45;
+      reloadEvents = [{ t: 0.22, f: () => sfx.boltOpen() }, { t: 0.6, f: () => sfx.magOut() }, { t: 1.42, f: () => { sfx.magIn(); ammo = MAG; gunJolt = 1; } }, { t: 1.88, f: () => { sfx.boltClose(); sp.z.v += 0.5; } }];
+    } else if (cur === 'shotgun') {
+      reloadShells = MAG - ammo; reloadDur = 0.35 + reloadShells * 0.42 + (reloadEmpty ? 0.55 : 0.3);
+      reloadEvents = [];
+      for (let i = 0; i < reloadShells; i++) reloadEvents.push({ t: 0.35 + i * 0.42 + 0.27, f: () => { ammo = Math.min(MAG, ammo + 1); sfx.shellIn(); gunJolt = 0.35; } });
+      if (reloadEmpty) reloadEvents.push({ t: reloadDur - 0.5, f: () => { pumpT = 0.6; } });
+    } else { reloadDur = W.reload; reloadEvents = [{ t: 0.3, f: () => sfx.magOut() }, { t: W.reload - 0.45, f: () => { sfx.magIn(); ammo = MAG; gunJolt = 1; } }]; }
     return;
   }
   reloading = true; reloadT = 0; reloadEv = 0; firing = false;
@@ -2047,14 +2166,17 @@ function hitFx(e, head, pt) {
   hitT = 0.14; hitKill = false;
 }
 // called for the local player's own shots
-function damageEnemy(e, dmg, head, pt, dir) {
+function knock(e, dir, kb) { if (!kb || !e.alive) return; e.group.position.x += dir.x * kb * 0.9; e.group.position.z += dir.z * kb * 0.9; resolveXZ(e.group.position, 0.5, 0); e.kick = Math.min(1.6, e.kick + kb); }
+function damageEnemy(e, dmg, head, pt, dir, kb) {
   if (!e.alive) return;
   hitFx(e, head, pt);
+  if (kb) { e.kick = Math.min(1.6, e.kick + kb); emit(pt.x, pt.y, pt.z, 1, 0.6, 0.3, 10, 6, 1); }
   if (net.role === 'client') {
-    netSend({ t: 'hit', i: enemies.indexOf(e), dmg, h: head ? 1 : 0, d: [r2(dir.x), r2(dir.z)] });
+    netSend({ t: 'hit', i: enemies.indexOf(e), dmg, h: head ? 1 : 0, d: [r2(dir.x), r2(dir.z)], kb: kb ? r2(kb) : 0 });
     if (!e.pendingKill) sfx.hit(head);
     return;
   }
+  knock(e, dir, kb);
   applyDamage(e, dmg, head, dir, net.myId);
 }
 // authoritative damage (solo / host)
@@ -2895,7 +3017,8 @@ function hostOnData(id, d) {
       const e = enemies[d.i]; if (!e || !e.active || !e.alive) break;
       tC.set(e.group.position.x, d.h ? 2.05 : 1.2, e.group.position.z);
       e.flash = 1; e.kick = Math.min(1.4, e.kick + (d.h ? 1 : 0.6));
-      applyDamage(e, Math.min(110, +d.dmg || 0), !!d.h, tD.set(d.d[0], 0, d.d[1]), id); break;
+      knock(e, tD.set(d.d[0], 0, d.d[1]), Math.min(1.6, +d.kb || 0));
+      applyDamage(e, Math.min(460, +d.dmg || 0), !!d.h, tD.set(d.d[0], 0, d.d[1]), id); break;
     }
   }
 }
@@ -3204,14 +3327,14 @@ const WEAP = {
   pistol:  { name: 'PISTOL',  auto: false, rate: 0.16,  mag: 12, reload: 1.3, dmg: [30, 90],   duel: [20, 60],  sh: 0.012, sa: 0.003, kick: 0.9, fov: 62, ads: new THREE.Vector3(0, -0.087, -0.32), muzzle: new THREE.Vector3(0, 0.055, -0.27) },
   rifle:   { name: 'RIFLE',   auto: true,  rate: 0.095, mag: 30, reload: 0,   dmg: [35, 105],  duel: [24, 80],  sh: 0.008, sa: 0.002, kick: 1,   fov: 55, ads: new THREE.Vector3(0, -0.1, -0.27) },
   sniper:  { name: 'SNIPER',  auto: false, rate: 1.2,   mag: 5,  reload: 2.3, dmg: [120, 320], duel: [90, 150], sh: 0.05,  sa: 0,     kick: 3.2, fov: 18, ads: new THREE.Vector3(0, -0.105, -0.25), muzzle: new THREE.Vector3(0, 0.012, -1.16) },
-  shotgun: { name: 'SHOTGUN', auto: false, rate: 0.85,  mag: 6,  reload: 2.0, dmg: [17, 28],   duel: [11, 16],  sh: 0.075, sa: 0.055, kick: 2.4, fov: 62, ads: new THREE.Vector3(0, -0.07, -0.3), muzzle: new THREE.Vector3(0, 0.022, -0.82), pellets: 9 },
+  shotgun: { name: 'SHOTGUN', auto: false, rate: 0.8,   mag: 7,  reload: 1,   dmg: [24, 38],   duel: [10, 15],  sh: 0.062, sa: 0.044, kick: 2.9, fov: 62, ads: new THREE.Vector3(0, -0.075, -0.3), muzzle: new THREE.Vector3(0, 0.024, -0.9), pellets: 12 },
   blade:   { name: 'BLADE',   melee: true, rate: 0.5,   mag: 0,  reload: 0,   dmg: [140, 140], duel: [55, 55],  kick: 0,   fov: 75, ads: new THREE.Vector3(0.2, -0.2, -0.42), range: 3.4 },
   rocket:  { name: 'ROCKET',  auto: false, rate: 0.85,  mag: 3,  reload: 0,   dmg: [300, 300], duel: [130, 130], sh: 0.004, sa: 0.002, kick: 2.8, fov: 65, ads: new THREE.Vector3(-0.02, -0.11, -0.22), muzzle: new THREE.Vector3(0.02, 0.03, -0.98) },
 };
 const WEAP_ORDER = ['pistol', 'rifle', 'sniper', 'shotgun', 'blade'];
 let pistolSlideT = 0;
 let cur = 'pistol', prevWeapon = 'pistol', semiHeld = false, swingT = -1, pumpT = 0, sniperBoltT = 0, ultBackT = 0;
-const ammoStore = { pistol: 12, rifle: 30, sniper: 5, shotgun: 6, blade: 0, rocket: 0 };
+const ammoStore = { pistol: 12, rifle: 30, sniper: 5, shotgun: 7, blade: 0, rocket: 0 };
 function refillAll() { for (const k of WEAP_ORDER) ammoStore[k] = WEAP[k].mag; ammo = WEAP[cur].mag || 0; }
 function muzzleFor(w) { return w === 'rifle' ? new THREE.Vector3(0, 0.012, SKINS[skin].muzzleZ) : WEAP[w].muzzle; }
 function switchWeapon(w, quiet) {
@@ -3246,6 +3369,7 @@ function assistTarget(dir, maxDist) {
   if (isDuel()) for (const [id, av] of avatars) if (!av.down) consider(av.g.position.x, av.g.position.y + 1.2, av.g.position.z, 0.45, { pid: id });
   return best;
 }
+const sgFall = d => d < 10 ? 1 : Math.max(0.3, 1 - (d - 10) / 22 * 0.7);
 // apply accumulated damage from one trigger pull
 const _hitAcc = new Map(), _pHit = new Map();
 function fireHitscan(W) {
@@ -3267,28 +3391,29 @@ function fireHitscan(W) {
     if (hits.length) {
       const h = hits[0], pt = h.point, e = h.object.userData.enemy, pid = h.object.userData.player, head = !!h.object.userData.head;
       end = pt;
-      if (pid) { const q = _pHit.get(pid) || { dmg: 0, head: false, pt: pt.clone() }; let d = W.duel[head ? 1 : 0]; if (cur === 'shotgun') d *= Math.max(0.35, 1 - h.distance / 30); q.dmg += d; q.head = q.head || head; _pHit.set(pid, q); }
-      else if (e) { const q = _hitAcc.get(e) || { dmg: 0, head: false, pt: pt.clone() }; let d = W.dmg[head ? 1 : 0]; if (cur === 'shotgun') d *= Math.max(0.35, 1 - h.distance / 30); q.dmg += d; q.head = q.head || head; _hitAcc.set(e, q); }
+      if (pid) { const q = _pHit.get(pid) || { dmg: 0, head: false, pt: pt.clone() }; let d = W.duel[head ? 1 : 0]; if (cur === 'shotgun') d *= sgFall(h.distance); q.dmg += d; q.head = q.head || head; _pHit.set(pid, q); }
+      else if (e) { const q = _hitAcc.get(e) || { dmg: 0, head: false, pt: pt.clone() }; let d = W.dmg[head ? 1 : 0]; if (cur === 'shotgun') d *= sgFall(h.distance); q.dmg += d; q.head = q.head || head; _hitAcc.set(e, q); }
       else if (pellets === 1 || k < 4) { emit(pt.x, pt.y, pt.z, NEON_C.r, NEON_C.g, NEON_C.b, pellets > 1 ? 3 : 8, 4.5, 1.5); addImpact(pt, pellets > 1 ? 0.35 : 0.55); }
     } else end = tC.copy(camera.position).addScaledVector(shotDir, 120).clone();
     if (isTouch && (!hits.length || (!hits[0].object.userData.enemy && !hits[0].object.userData.player))) {
       const t = assistTarget(shotDir, cur === 'shotgun' ? 30 : 120);
       if (t && (!hits.length || hits[0].distance > camera.position.distanceTo(t.pt))) {
         end = t.pt;
-        if (t.pid) { const q = _pHit.get(t.pid) || { dmg: 0, head: false, pt: t.pt }; let d = W.duel[0]; if (cur === 'shotgun') d *= Math.max(0.35, 1 - camera.position.distanceTo(t.pt) / 30); q.dmg += d; _pHit.set(t.pid, q); }
-        else { const q = _hitAcc.get(t.e) || { dmg: 0, head: false, pt: t.pt }; let d = W.dmg[0]; if (cur === 'shotgun') d *= Math.max(0.35, 1 - camera.position.distanceTo(t.pt) / 30); q.dmg += d; _hitAcc.set(t.e, q); }
+        if (t.pid) { const q = _pHit.get(t.pid) || { dmg: 0, head: false, pt: t.pt }; let d = W.duel[0]; if (cur === 'shotgun') d *= sgFall(camera.position.distanceTo(t.pt)); q.dmg += d; _pHit.set(t.pid, q); }
+        else { const q = _hitAcc.get(t.e) || { dmg: 0, head: false, pt: t.pt }; let d = W.dmg[0]; if (cur === 'shotgun') d *= sgFall(camera.position.distanceTo(t.pt)); q.dmg += d; _hitAcc.set(t.e, q); }
       }
     }
-    if (k < 5) addTracer(muzzle, end, cur === 'sniper' ? 2.4 : pellets > 1 ? 0.6 : 1);
+    if (k < (pellets > 1 ? 8 : 5)) addTracer(muzzle, end, cur === 'sniper' ? 2.4 : pellets > 1 ? 0.6 : 1);
     if (!firstEnd) firstEnd = end.clone();
   }
   const dirN = tD.copy(shotDir);
-  for (const [e, q] of _hitAcc) damageEnemy(e, q.dmg, q.head, q.pt, dirN);
+  for (const [e, q] of _hitAcc) damageEnemy(e, q.dmg, q.head, q.pt, dirN, cur === 'shotgun' ? Math.min(1.6, q.dmg / 110) : 0);
   for (const [id, q] of _pHit) hitPlayer(id, q.head, q.pt, Math.round(q.dmg));
   shotEnd.copy(firstEnd);
   if (net.role !== 'solo') { const m = { t: 'shot', w: cur, a: [r2(muzzle.x), r2(muzzle.y), r2(muzzle.z)], b: [r2(shotEnd.x), r2(shotEnd.y), r2(shotEnd.z)] }; if (net.role === 'client') netSend(m); else netBroadcast({ t: 'shot', id: 'host', w: cur, a: m.a, b: m.b }); }
 }
 function shoot() {
+  if (reloading && cur === 'shotgun' && ammo > 0) { reloading = false; loadHand.visible = false; pumpHand.visible = true; }
   if (reloading || down || frozen() || state !== 'play') return;
   const W = WEAP[cur];
   if (W.melee) return swing();
@@ -3299,20 +3424,20 @@ function shoot() {
   const ads = aimT > 0.5, kick = (ads ? 0.006 : 0.011) * W.kick;
   pitch += kick; recoilPitch += kick; yaw += (Math.random() - 0.5) * 0.006 * W.kick;
   gunKick = 1; boltT = 1; heat = Math.min(1.5, heat + 0.06 * W.kick);
-  flashMat.opacity = flashMatM.opacity = 1; muzzleFlash.rotation.z = Math.random() * 6.28; muzzleFlash.scale.setScalar((0.75 + Math.random() * 0.55) * (cur === 'rifle' ? 1 : 1.5));
+  flashMat.opacity = flashMatM.opacity = 1; muzzleFlash.rotation.z = Math.random() * 6.28; muzzleFlash.scale.setScalar((0.75 + Math.random() * 0.55) * (cur === 'rifle' ? 1 : cur === 'shotgun' ? 2.3 : cur === 'pistol' ? 0.9 : 1.6));
   flashLight.intensity = 2.4 * Math.min(2, W.kick); gunFlashLight.intensity = 3.2;
   kickSprings(); for (let i = 1; i < W.kick; i++) { sp.z.v += 0.5; sp.rx.v += 1.1; }
   inspectT = -1;
   if (cur === 'rifle') { ejectCasing(); sfx.shot(); }
   else if (cur === 'pistol') { sfx.pistol(); pistolSlideT = 0.12; }
   else if (cur === 'sniper') { sfx.sniper(); sniperBoltT = 0.9; shake = Math.min(1, shake + 0.15); }
-  else if (cur === 'shotgun') { sfx.shotgun(); pumpT = 0.6; shake = Math.min(1, shake + 0.12); }
+  else if (cur === 'shotgun') { sfx.shotgun(); pumpT = 0.6; shake = Math.min(1, shake + 0.22); sp.roll.v += (Math.random() - 0.5) * 0.8; }
   if (cur === 'rocket' && ammo <= 0) ultBackT = 0.8;
 }
 // ---- melee ----
 function swing() {
   const W = WEAP.blade;
-  fireCD = W.rate; swingT = 0; sfx.swing();
+  fireCD = W.rate; swingT = 0; swingSide = -swingSide; sfx.swing(swingSide);
   const fx = -Math.sin(yaw), fz = -Math.cos(yaw);
   if (onGround) { vel.x += fx * 5; vel.z += fz * 5; }
   let hitAny = false;
@@ -3332,45 +3457,108 @@ function swing() {
   if (hitAny) { sfx.slash(); shake = Math.min(1, shake + 0.15); sp.rz.v -= 2; }
   if (net.role !== 'solo') { const m = { t: 'shot', w: 'blade', a: [r2(P.x), r2(P.y + 1.3), r2(P.z)], b: [r2(P.x + fx), r2(P.y + 1.3), r2(P.z + fz)] }; if (net.role === 'client') netSend(m); else netBroadcast({ t: 'shot', id: 'host', w: 'blade', a: m.a, b: m.b }); }
 }
-// viewmodel pose for the active weapon (called at the end of updateCamera)
+// viewmodel pose + per-weapon animations (called at the end of updateCamera)
+let swingSide = 1, reloadShells = 0;
+const _v1 = new THREE.Vector3(), _v2 = new THREE.Vector3();
+const lerpV = (out, a, b, k) => out.lerpVectors(a, b, k);
 function poseWeapon(dt) {
   const M = models[cur];
   for (const k in models) if (k !== cur) models[k].visible = false;
   const scoped = cur === 'sniper' && aimT > 0.8;
   M.visible = !down && !scoped;
   $('scope').style.opacity = cur === 'sniper' ? clamp01((aimT - 0.75) / 0.25) : 0;
+  updateTrail(dt, cur === 'blade' && swingT >= 0 && swingT < 0.3);
   if (cur === 'rifle') return;
   M.position.copy(gun.position); M.rotation.copy(gun.rotation);
-  if (cur === 'rocket') { M.position.y += 0.03; M.position.x -= 0.02; }
-  if (cur === 'pistol') { M.position.y += 0.05 * (1 - aimT); M.position.z += 0.04; pistolSlideT = Math.max(0, pistolSlideT - dt); pSlide.position.z = Math.sin(clamp01(pistolSlideT / 0.12) * Math.PI) * 0.045; }
+  const t = reloadT, D = reloadDur;
+  const tilt = reloading ? ss(t, 0, 0.2) * (1 - ss(t, D - 0.28, D)) : 0;
+
+  if (cur === 'pistol') {
+    M.position.y += 0.05 * (1 - aimT); M.position.z += 0.04;
+    pistolSlideT = Math.max(0, pistolSlideT - dt);
+    let slideZ = Math.sin(clamp01(pistolSlideT / 0.12) * Math.PI) * 0.045;
+    if (ammo === 0 && !reloading) slideZ = 0.045;                       // slide locks back when empty
+    pMag.position.copy(PMAG_REST); pMag.rotation.x = -0.25; pLeft.position.copy(PLEFT_REST); pLeft.rotation.set(0, 0, 0.35);
+    if (reloading) {
+      M.rotation.z += tilt * 0.65; M.rotation.x += tilt * 0.3; M.position.x -= tilt * 0.06; M.position.y += tilt * 0.02;
+      let my = 0;
+      if (t > 0.2 && t < 0.45) { const k = ss(t, 0.2, 0.45); my = -0.42 * k * k; pMag.rotation.x -= k * 0.5; }
+      else if (t >= 0.45 && t < 0.78) my = -0.32 + 0.32 * ss(t, 0.45, 0.76);
+      pMag.position.y += my;
+      const magHand = _v1.set(0, -0.2 + my, 0.07);
+      if (t < 0.2) lerpV(pLeft.position, PLEFT_REST, _v2.set(0, -0.32, 0.06), ss(t, 0.02, 0.2));
+      else if (t < 0.45) pLeft.position.set(0, -0.32, 0.06);
+      else if (t < 0.8) pLeft.position.copy(magHand);
+      else if (reloadEmpty) {
+        const top = _v2.set(0.005, 0.1, -0.04);
+        if (t < 0.98) lerpV(pLeft.position, magHand.set(0, -0.2, 0.07), top, ss(t, 0.8, 0.98));
+        else if (t < 1.1) { pLeft.position.copy(top); pLeft.position.z += 0.05 * ss(t, 0.98, 1.05); slideZ = 0.045 * ss(t, 0.98, 1.04) * (t < 1.05 ? 1 : 0); }
+        else lerpV(pLeft.position, top.set(0.005, 0.1, 0.01), PLEFT_REST, ss(t, 1.1, D - 0.05));
+        pLeft.rotation.z = 0.35 * (t > 1.2 ? 1 : 0);
+      } else lerpV(pLeft.position, magHand.set(0, -0.2, 0.07), PLEFT_REST, ss(t, 0.8, D - 0.05));
+      if (t < 1.3 && t > 0.15) pLeft.rotation.z = 0;
+    }
+    pSlide.position.z = slideZ;
+  }
+
+  if (cur === 'sniper') {
+    sniperBoltT = Math.max(0, sniperBoltT - dt);
+    let k = Math.sin(Math.PI * clamp01((0.75 - sniperBoltT) / 0.55)) * (sniperBoltT > 0 ? 1 : 0);
+    if (sniperBoltT > 0 && sniperBoltT < 0.6 && !sniperBolt._clk) { sniperBolt._clk = 1; sfx.bolt(); } if (sniperBoltT === 0) sniperBolt._clk = 0;
+    sMag.position.copy(SMAG_REST); sMag.rotation.x = 0; sLeft.position.copy(SLEFT_REST);
+    if (reloading) {
+      M.rotation.z -= tilt * 0.45; M.rotation.x += tilt * 0.22; M.position.x -= tilt * 0.05;
+      k = Math.max(ss(t, 0.2, 0.38) * (1 - ss(t, 1.85, 2.02)), 0);                    // bolt open during reload
+      let my = 0;
+      if (t > 0.6 && t < 0.85) { const q = ss(t, 0.6, 0.85); my = -0.45 * q * q; sMag.rotation.x = q * 0.4; }
+      else if (t >= 0.85 && t < 1.45) my = t < 0.95 ? -0.45 : -0.36 + 0.36 * ss(t, 0.95, 1.42);
+      sMag.position.y += my;
+      const magHand = _v1.set(0, -0.15 + my, -0.07);
+      if (t < 0.45) sLeft.position.copy(SLEFT_REST);
+      else if (t < 0.6) lerpV(sLeft.position, SLEFT_REST, _v2.set(0, -0.15, -0.07), ss(t, 0.45, 0.6));
+      else if (t < 1.48) sLeft.position.copy(magHand);
+      else lerpV(sLeft.position, _v2.set(0, -0.15, -0.07), SLEFT_REST, ss(t, 1.48, 1.78));
+    }
+    sniperBolt.rotation.z = k * 1.2; sniperBolt.position.z = 0.08 + k * 0.06;
+    scopeGlint.material.opacity = 0.35 + Math.sin(idleT * 1.7) * 0.15;
+  }
+
   if (cur === 'shotgun') {
     pumpT = Math.max(0, pumpT - dt);
     const k = Math.sin(Math.PI * clamp01((0.5 - pumpT) / 0.35)) * (pumpT > 0 ? 1 : 0);
-    pump.position.z = PUMP_Z + 0.1 * k;
+    pump.position.z = PUMP_Z + 0.11 * k;
     if (pumpT > 0 && pumpT < 0.42 && !pump._clk) { pump._clk = 1; sfx.pump(); } if (pumpT === 0) pump._clk = 0;
+    if (k > 0) { M.rotation.x += k * 0.06; M.position.z += k * 0.015; }
+    const loading = reloading && t > 0.25 && t < 0.35 + reloadShells * 0.42 + 0.15;
+    loadHand.visible = loading; pumpHand.visible = !loading;
+    if (reloading) {
+      M.rotation.z -= tilt * 0.55; M.rotation.x += tilt * 0.12; M.position.x -= tilt * 0.04; M.position.y += tilt * 0.02;
+      if (loading) {
+        const u = clamp01(((t - 0.35) % 0.42) / 0.42), inCycle = t >= 0.35 && t < 0.35 + reloadShells * 0.42;
+        if (!inCycle) loadHand.position.copy(LOAD_BELOW);
+        else if (u < 0.55) lerpV(loadHand.position, LOAD_BELOW, LOAD_PORT, ss(u, 0, 0.55));
+        else if (u < 0.72) { loadHand.position.copy(LOAD_PORT); loadHand.position.z -= 0.05 * ss(u, 0.55, 0.7); }
+        else lerpV(loadHand.position, _v1.set(LOAD_PORT.x, LOAD_PORT.y, LOAD_PORT.z - 0.05), LOAD_BELOW, ss(u, 0.72, 1));
+      }
+    }
   }
-  if (cur === 'sniper') {
-    sniperBoltT = Math.max(0, sniperBoltT - dt);
-    const k = Math.sin(Math.PI * clamp01((0.75 - sniperBoltT) / 0.55)) * (sniperBoltT > 0 ? 1 : 0);
-    sniperBolt.rotation.z = k * 1.2; sniperBolt.position.z = 0.08 + k * 0.06;
-    if (sniperBoltT > 0 && sniperBoltT < 0.6 && !sniperBolt._clk) { sniperBolt._clk = 1; sfx.bolt(); } if (sniperBoltT === 0) sniperBolt._clk = 0;
-  }
+
+  if (cur === 'rocket') { M.position.y += 0.03; M.position.x -= 0.02; }
+
   if (cur === 'blade') {
-    // idle: blade held up and forward on the right; swing sweeps across
     M.position.set(0.24 + gun.position.x - 0.2, -0.3 + (gun.position.y + 0.2), -0.48 + (gun.position.z + 0.42));
-    let rx = -0.5, ry = 0.15, rz = -0.35, px = 0, py = 0;
+    let rx = -0.5 + Math.sin(idleT * 1.3) * 0.02, ry = 0.15, rz = -0.35, px = 0, py = 0;
     if (swingT >= 0) {
-      swingT += dt; const t = clamp01(swingT / 0.3), e = 1 - Math.pow(1 - t, 3);
-      const wind = clamp01(swingT / 0.06);
-      rx = -0.5 - 0.9 * Math.sin(t * Math.PI); ry = 0.15 + wind * 0.4 - e * 1.6; rz = -0.35 + wind * 0.6 - e * 1.9; px = -0.32 * e; py = 0.06 * Math.sin(t * Math.PI);
-      if (swingT > 0.45) swingT = -1;
+      swingT += dt; const s = swingSide, q = clamp01(swingT / 0.3), e = 1 - Math.pow(1 - q, 3), wind = clamp01(swingT / 0.06);
+      if (s > 0) { rx = -0.5 - 0.9 * Math.sin(q * Math.PI); ry = 0.15 + wind * 0.45 - e * 1.7; rz = -0.35 + wind * 0.6 - e * 2.0; px = -0.34 * e; }
+      else { rx = -0.5 - 0.7 * Math.sin(q * Math.PI); ry = -1.3 + (1 - wind) * 1.45 + e * 1.6; rz = -2.1 + (1 - wind) * 1.75 + e * 2.1; px = -0.3 + 0.32 * e; }
+      py = 0.06 * Math.sin(q * Math.PI);
+      const b = ss(swingT, 0.3, 0.46);                     // recover smoothly to the guard pose
+      rx += (-0.5 - rx) * b; ry += (0.15 - ry) * b; rz += (-0.35 - rz) * b; px *= 1 - b; py *= 1 - b;
+      if (swingT > 0.46) swingT = -1;
     }
     M.position.x += px; M.position.y += py;
     M.rotation.set(rx + gun.rotation.x * 0.5, ry + gun.rotation.y * 0.5, rz + gun.rotation.z * 0.5);
-  }
-  if (reloading && cur !== 'rifle') {
-    const t = clamp01(reloadT / reloadDur), k = Math.sin(t * Math.PI);
-    M.rotation.x -= k * 0.55; M.rotation.z += k * 0.5; M.position.y -= k * 0.1;
   }
 }
 
