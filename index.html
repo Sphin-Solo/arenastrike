@@ -268,7 +268,7 @@ const M = {
   neonA: new THREE.MeshBasicMaterial({ color: 0xffb347 }),
   red: new THREE.MeshBasicMaterial({ color: 0xff2a2a }),
   toxic: new THREE.MeshBasicMaterial({ color: 0x7dff5a }),
-  puddle: new THREE.MeshStandardMaterial({ color: 0x0a0d14, roughness: 0.04, metalness: 0.9, transparent: true, opacity: 0.85, alphaMap: T.radial, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2 }),
+  puddle: new THREE.MeshStandardMaterial({ envMap: null, color: 0x0a0d14, roughness: 0.04, metalness: 0.9, transparent: true, opacity: 0.85, alphaMap: T.radial, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2 }),
 };
 // --- static geometry batching (fewer draw calls = smoother) ---
 const batches = new Map();
@@ -628,7 +628,7 @@ const envTex = (() => {
   const t = pm.fromScene(es, 0.02).texture; pm.dispose(); return t;
 })();
 gunScene.environment = envTex;
-scene.environment = envTex;
+M.puddle.envMap = envTex; M.puddle.needsUpdate = true;
 
 const NEON_C = new THREE.Color(0x22e8ff), NEON_M = new THREE.Color(0xff2bd6), WHITE = new THREE.Color(0xffffff);
 const gm = {
@@ -823,14 +823,15 @@ for (let i = 0; i < 9; i++) spike(dragon, 0, 0.066, -0.44 + i * 0.07, 0.008, 0.0
 for (let i = 0; i < 4; i++) spike(dragon, 0, -0.1, 0.25 + i * 0.05, 0.006, 0.03, new THREE.Vector3(0, -1, 0.7), dm.bone); // tail spikes under stock
 // wings (pivot near rear of receiver)
 function makeWing(side) {
-  const w = new THREE.Group(); w.position.set(side * 0.045, 0.05, -0.04); dragon.add(w);
+  const w = new THREE.Group(); w.position.set(side * 0.04, 0.06, -0.32); dragon.add(w);
+  const inner = new THREE.Group(); inner.scale.setScalar(0.62); inner.rotation.z = -side * 0.55; w.add(inner); const wp = inner;
   const tips = [[0.3, 0.12], [0.34, 0.03], [0.26, -0.05]];
   const sh = new THREE.Shape(); sh.moveTo(0, 0); sh.lineTo(0.3, 0.12); sh.quadraticCurveTo(0.27, 0.06, 0.34, 0.03); sh.quadraticCurveTo(0.27, 0.0, 0.26, -0.05); sh.quadraticCurveTo(0.14, -0.05, 0.06, -0.025); sh.lineTo(0, 0);
   const g = new THREE.ShapeGeometry(sh, 6); g.rotateY(-Math.PI / 2);
-  const mem = new THREE.Mesh(g, dm.membrane); w.add(mem);
-  for (const [u, v] of tips) limb(w, new THREE.Vector3(0, 0, 0), new THREE.Vector3(0, v, u), Math.hypot(u, v), 0.008, dm.bone);
-  limb(w, new THREE.Vector3(0, 0, 0), new THREE.Vector3(0, 0.12, 0.3), 0.33, 0.004, dm.eye).position.x += side * 0.004; // glowing vein
-  spike(w, 0, 0.0, 0.0, 0.008, 0.03, new THREE.Vector3(side * 0.2, 1, -0.6), dm.bone);                        // wing claw
+  const mem = new THREE.Mesh(g, dm.membrane); wp.add(mem);
+  for (const [u, v] of tips) limb(wp, new THREE.Vector3(0, 0, 0), new THREE.Vector3(0, v, u), Math.hypot(u, v), 0.008, dm.bone);
+  limb(wp, new THREE.Vector3(0, 0, 0), new THREE.Vector3(0, 0.12, 0.3), 0.33, 0.004, dm.eye).position.x += side * 0.004; // glowing vein
+  spike(wp, 0, 0.0, 0.0, 0.008, 0.03, new THREE.Vector3(side * 0.2, 1, -0.6), dm.bone);                        // wing claw
   return w;
 }
 const wingL = makeWing(-1), wingR = makeWing(1);
