@@ -4574,7 +4574,7 @@ function poseWeapon(dt) {
   }
 
   if (cur === 'gatling') {
-    M.position.y -= 0.02; M.position.x += 0.02; M.position.z += 0.02;
+    M.position.y -= 0.035; M.position.x += 0.035; M.position.z -= 0.07;
     gatAng += gatSpin * dt * 38; gatBarrels.rotation.z = gatAng;
     gatHeat = Math.max(0, gatHeat - dt * 0.35);
     gm.heat.emissiveIntensity = Math.min(1.6, gatHeat * 1.6); gatGlow.material.opacity = Math.min(0.9, gatHeat);
@@ -4867,7 +4867,7 @@ const BM = {
 const boss = { active: false, alive: false, isBoss: true, hp: 1, maxHp: 1, phase: 1, flash: 0, kick: 0, atk: 'idle', atkT: 0, cd: 3, walk: 0, deathT: -1, introT: 0, n: 0, slamT: 0,
   nx: 0, nz: 0, nr: 0, anim: 0, fireAlt: 0, missN: 0, missT: 0, fanN: 0, fanT: 0, addsDone: false, pendingKill: false, targetY: 0 };
 const bossG = new THREE.Group(); bossG.visible = false; scene.add(bossG);
-const bossBody = new THREE.Group(); bossG.add(bossBody);
+const bossBody = new THREE.Group(); bossG.add(bossBody); bossG.scale.setScalar(1.2);
 const bossParts = {};
 {
   const add = (par, geo, m, x, y, z, sx, sy, sz, rx, ry, rz) => { const o = new THREE.Mesh(geo, m); o.position.set(x, y, z); o.scale.set(sx, sy, sz); if (rx || ry || rz) o.rotation.set(rx || 0, ry || 0, rz || 0); o.castShadow = true; par.add(o); return o; };
