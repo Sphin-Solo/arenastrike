@@ -2,7 +2,8 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes">
 <title>Arena Strike</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;900&family=Pirata+One&display=swap" rel="stylesheet">
 <style>
@@ -81,6 +82,35 @@
   body.skin-wyrm #fin .s{color:#9bffd0;font-family:Georgia,serif;letter-spacing:.3em}
   body.skin-wyrm #fin .ln{background:linear-gradient(90deg,transparent,#46ffb0 30%,#9b4dff 70%,transparent);box-shadow:0 0 10px #46ffb0}
   body.skin-wyrm #flashfx{background:radial-gradient(circle at center,rgba(200,255,220,.85),rgba(70,255,176,.35) 35%,rgba(120,40,200,.3) 55%,rgba(0,0,0,0) 78%)}
+  #touch{position:fixed;inset:0;display:none;touch-action:none;-webkit-touch-callout:none}
+  body.touch #touch{display:block}
+  body.touch.menu #touch{display:none}
+  #stick{position:absolute;width:130px;height:130px;margin:-65px 0 0 -65px;border-radius:50%;border:2px solid rgba(255,255,255,.25);background:rgba(10,16,30,.25);opacity:0;transition:opacity .15s;pointer-events:none}
+  #stick.on{opacity:1}
+  #knob{position:absolute;left:50%;top:50%;width:56px;height:56px;margin:-28px 0 0 -28px;border-radius:50%;background:rgba(127,227,255,.45);box-shadow:0 0 12px rgba(127,227,255,.5)}
+  #stickHint{position:absolute;left:9%;bottom:12%;width:110px;height:110px;border-radius:50%;border:2px dashed rgba(255,255,255,.15);pointer-events:none}
+  .tbtn{position:absolute;border-radius:50%;display:flex;align-items:center;justify-content:center;font:800 13px system-ui,sans-serif;letter-spacing:.06em;color:#e8f6ff;
+    background:rgba(16,24,42,.45);border:2px solid rgba(255,255,255,.28);backdrop-filter:blur(2px);user-select:none;-webkit-user-select:none}
+  .tbtn.down{background:rgba(127,227,255,.35);border-color:#7fe3ff}
+  #tFire{right:calc(26px + env(safe-area-inset-right));bottom:56px;width:100px;height:100px;font-size:15px;border-color:rgba(255,90,90,.6);background:rgba(60,10,16,.4)}
+  #tFire.down{background:rgba(255,80,80,.45);border-color:#ff8080}
+  #tAim{right:calc(146px + env(safe-area-inset-right));bottom:34px;width:64px;height:64px}
+  #tAim.on{background:rgba(127,227,255,.35);border-color:#7fe3ff}
+  #tJump{right:calc(38px + env(safe-area-inset-right));bottom:176px;width:66px;height:66px}
+  #tReload{right:calc(150px + env(safe-area-inset-right));bottom:118px;width:54px;height:54px}
+  #tPause{right:calc(14px + env(safe-area-inset-right));top:12px;width:40px;height:40px;font-size:12px}
+  body.touch #br{top:58px;bottom:auto;right:calc(16px + env(safe-area-inset-right))}
+  body.touch #ammo{font-size:30px}
+  body.touch #bl{left:50%;bottom:auto;top:12px;width:200px;margin-left:-100px}
+  body.touch #fps{right:auto;left:calc(20px + env(safe-area-inset-left));top:auto;bottom:6px}
+  body.touch #tl{left:calc(16px + env(safe-area-inset-left))}
+  body.touch #banner{bottom:auto;top:22%}
+  body.touch .keys{display:none}
+  .tkeys{display:none;font-size:13px;line-height:1.7;margin-bottom:16px;opacity:.85}
+  body.touch .tkeys{display:block}
+  #rotate{position:fixed;inset:0;display:none;z-index:20;align-items:center;justify-content:center;flex-direction:column;gap:10px;background:#0b1020;font-weight:800;letter-spacing:.1em;text-align:center;padding:20px}
+  @media (orientation:portrait){ body.touch #rotate{display:flex} }
+  body.touch #panel{max-height:92vh;overflow:auto;padding:18px 22px}
   #fps{position:absolute;right:12px;top:10px;font:12px ui-monospace,Menlo,Consolas,monospace;opacity:.6}
   #overlay{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(8,12,22,.72);backdrop-filter:blur(3px)}
   #panel{width:min(440px,90vw);background:#141b2cee;border:1px solid #2b3956;border-radius:14px;padding:28px 30px;box-shadow:0 20px 60px #0008}
@@ -120,9 +150,20 @@
   <div id="fin"><div class="ln"></div><div class="t" id="fint">WAVE CLEARED</div><div class="s" id="fins">+0 BONUS</div><div class="ln"></div></div>
   <div id="fps"></div>
 </div>
+<div id="touch">
+  <div id="stickHint"></div>
+  <div id="stick"><div id="knob"></div></div>
+  <div class="tbtn" id="tFire">FIRE</div>
+  <div class="tbtn" id="tAim">AIM</div>
+  <div class="tbtn" id="tJump">JUMP</div>
+  <div class="tbtn" id="tReload">R</div>
+  <div class="tbtn" id="tPause">II</div>
+</div>
+<div id="rotate"><div style="font-size:42px">⟳</div>Rotate your phone to landscape</div>
 <div id="overlay"><div id="panel">
   <h1>ARENA <span>STRIKE</span></h1>
   <p id="sumtxt">Survive the waves of drones. Headshots do triple damage.</p>
+  <div class="tkeys">Left thumb: drag anywhere on the left side to move (push to the edge to sprint).<br>Right thumb: swipe to look. Hold FIRE and slide to aim while shooting.<br>AIM toggles sights · JUMP · R reloads · II pauses.</div>
   <div class="keys">
     <kbd>Mouse</kbd><span>Look</span>
     <kbd>W A S D</kbd><span>Move</span>
@@ -150,7 +191,9 @@ const $ = id => document.getElementById(id);
 
 // ---------- Renderer ----------
 const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
-let pixelRatio = Math.min(window.devicePixelRatio || 1, 1.5);
+const isTouch = (window.matchMedia && matchMedia('(pointer: coarse)').matches) || /[?&]touch=1/.test(location.search) || /[?&]touch=1/.test(location.hash);
+if (isTouch) document.body.classList.add('touch', 'menu');
+let pixelRatio = Math.min(window.devicePixelRatio || 1, isTouch ? 1 : 1.5);
 renderer.setPixelRatio(pixelRatio);
 renderer.setSize(innerWidth, innerHeight);
 renderer.outputEncoding = THREE.sRGBEncoding;
@@ -171,7 +214,7 @@ scene.add(new THREE.HemisphereLight(0x8fa8ff, 0x1a1626, 0.34));
 const sun = new THREE.DirectionalLight(0xc4d2ff, 0.55);
 sun.position.set(-34, 55, -22);
 sun.castShadow = true;
-sun.shadow.mapSize.set(2048, 2048);
+sun.shadow.mapSize.set(isTouch ? 1024 : 2048, isTouch ? 1024 : 2048);
 const sc = sun.shadow.camera; sc.left = -60; sc.right = 60; sc.top = 60; sc.bottom = -60; sc.near = 10; sc.far = 160;
 sun.shadow.bias = -0.0008;
 scene.add(sun);
@@ -1858,15 +1901,16 @@ function updatePlayer(dt) {
   const fx = -Math.sin(yaw), fz = -Math.cos(yaw), rx = Math.cos(yaw), rz = -Math.sin(yaw);
   let ix = (keys.KeyD || keys.ArrowRight ? 1 : 0) - (keys.KeyA || keys.ArrowLeft ? 1 : 0);
   let iz = (keys.KeyW || keys.ArrowUp ? 1 : 0) - (keys.KeyS || keys.ArrowDown ? 1 : 0);
-  const il = Math.hypot(ix, iz); if (il > 0) { ix /= il; iz /= il; }
-  const sprint = (keys.ShiftLeft || keys.ShiftRight) && iz > 0 && aimT < 0.3 && !firing;
+  if (touchMove.id !== null) { ix = touchMove.x; iz = -touchMove.y; }
+  const il = Math.hypot(ix, iz); if (il > 1) { ix /= il; iz /= il; }
+  const sprint = (keys.ShiftLeft || keys.ShiftRight || touchSprint) && iz > 0 && aimT < 0.3 && !firing;
   const spd = aimT > 0.5 ? 4.2 : (sprint ? 10.5 : 7);
   const tvx = (fx * iz + rx * ix) * spd, tvz = (fz * iz + rz * ix) * spd;
   const a = 1 - Math.exp(-(onGround ? 14 : 3) * dt);
   vel.x += (tvx - vel.x) * a; vel.z += (tvz - vel.z) * a;
   P.x += vel.x * dt; P.z += vel.z * dt;
   resolveXZ(P, 0.4, P.y);
-  if (keys.Space && onGround) { velY = 8.4; onGround = false; }
+  if ((keys.Space || touchJump) && onGround) { velY = 8.4; onGround = false; }
   const wasGround = onGround, fallV = velY;
   velY -= 25 * dt;
   P.y += velY * dt;
@@ -2089,12 +2133,12 @@ function updateWaves(dt) {
 // ---------- Overlay / input ----------
 const overlay = $('overlay');
 function showOverlay(title, sum, btn, note) {
-  overlay.style.display = 'flex';
+  overlay.style.display = 'flex'; document.body.classList.add('menu'); if (isTouch) resetTouch();
   overlay.querySelector('h1').innerHTML = title;
   $('sumtxt').textContent = sum; $('play').textContent = btn; $('note').textContent = note || '';
   firing = false; aiming = false;
 }
-function hideOverlay() { overlay.style.display = 'none'; }
+function hideOverlay() { overlay.style.display = 'none'; document.body.classList.remove('menu'); }
 function pause() {
   if (state !== 'play') return;
   state = 'paused';
@@ -2119,6 +2163,11 @@ function beginPlay() {
 }
 $('play').addEventListener('click', () => {
   initAudio();
+  if (isTouch) {
+    fallback = true;
+    try { const el = document.documentElement; const fs = el.requestFullscreen || el.webkitRequestFullscreen; if (fs && !document.fullscreenElement) { const p = fs.call(el); if (p && p.then) p.then(() => { try { screen.orientation.lock('landscape').catch(() => {}); } catch (er) {} }).catch(() => {}); } } catch (er) {}
+    beginPlay(); return;
+  }
   if (fallback) { beginPlay(); return; }
   try {
     const p = canvas.requestPointerLock();
@@ -2134,15 +2183,79 @@ document.addEventListener('pointerlockchange', () => {
 });
 document.addEventListener('pointerlockerror', lockFailed);
 
-addEventListener('mousemove', e => {
-  if (state !== 'play' || (!locked && !fallback)) return;
-  let mx = e.movementX || 0, my = e.movementY || 0;
-  if (Math.abs(mx) > 300 || Math.abs(my) > 300) return; // ignore browser spikes
-  const s = 0.0022 * sens * (1 - aimT * 0.4);
+function applyLook(mx, my, mult) {
+  const s = 0.0022 * sens * mult * (1 - aimT * 0.4);
   yaw -= mx * s; pitch -= my * s;
   pitch = Math.max(-1.5, Math.min(1.5, pitch));
   lookDX += mx; lookDY += my;
+}
+addEventListener('mousemove', e => {
+  if (isTouch && !locked) return;
+  if (state !== 'play' || (!locked && !fallback)) return;
+  let mx = e.movementX || 0, my = e.movementY || 0;
+  if (Math.abs(mx) > 300 || Math.abs(my) > 300) return; // ignore browser spikes
+  applyLook(mx, my, 1);
 });
+// ---------- Touch controls ----------
+const touchMove = { id: null, x: 0, y: 0, ox: 0, oy: 0 };
+let lookId = null, lookX = 0, lookY = 0, touchJump = false, touchSprint = false, jumpId = null;
+const fireIds = new Set();
+const stickEl = $('stick'), knobEl = $('knob'), STICK_R = 58;
+function btnOf(t) { const el = t.target && t.target.closest ? t.target.closest('.tbtn') : null; return el; }
+function onTouchStart(e) {
+  e.preventDefault();
+  if (state !== 'play') return;
+  for (const t of e.changedTouches) {
+    const b = btnOf(t), id = b && b.id;
+    if (id === 'tFire') {
+      fireIds.add(t.identifier); firing = true; b.classList.add('down');
+      if (fireCD <= 0) shoot();
+      if (lookId === null) { lookId = t.identifier; lookX = t.clientX; lookY = t.clientY; }
+    } else if (id === 'tAim') { aiming = !aiming; b.classList.toggle('on', aiming); }
+    else if (id === 'tJump') { touchJump = true; jumpId = t.identifier; b.classList.add('down'); }
+    else if (id === 'tReload') { reload(); b.classList.add('down'); setTimeout(() => b.classList.remove('down'), 150); }
+    else if (id === 'tPause') { pause(); }
+    else if (t.clientX < innerWidth * 0.45 && touchMove.id === null) {
+      touchMove.id = t.identifier; touchMove.ox = t.clientX; touchMove.oy = t.clientY; touchMove.x = touchMove.y = 0;
+      stickEl.style.left = t.clientX + 'px'; stickEl.style.top = t.clientY + 'px'; stickEl.classList.add('on'); knobEl.style.transform = '';
+    } else if (lookId === null) { lookId = t.identifier; lookX = t.clientX; lookY = t.clientY; }
+  }
+}
+function onTouchMove(e) {
+  e.preventDefault();
+  if (state !== 'play') return;
+  for (const t of e.changedTouches) {
+    if (t.identifier === touchMove.id) {
+      let dx = t.clientX - touchMove.ox, dy = t.clientY - touchMove.oy; const d = Math.hypot(dx, dy);
+      if (d > STICK_R) { dx *= STICK_R / d; dy *= STICK_R / d; }
+      touchMove.x = dx / STICK_R; touchMove.y = dy / STICK_R;
+      touchSprint = d > STICK_R * 1.15 && dy < -STICK_R * 0.5;
+      knobEl.style.transform = 'translate(' + dx + 'px,' + dy + 'px)';
+    } else if (t.identifier === lookId) {
+      const mx = t.clientX - lookX, my = t.clientY - lookY; lookX = t.clientX; lookY = t.clientY;
+      if (Math.abs(mx) < 200 && Math.abs(my) < 200) applyLook(mx, my, 2.3);
+    }
+  }
+}
+function onTouchEnd(e) {
+  e.preventDefault();
+  for (const t of e.changedTouches) {
+    if (fireIds.delete(t.identifier) && fireIds.size === 0) { firing = false; $('tFire').classList.remove('down'); }
+    if (t.identifier === touchMove.id) { touchMove.id = null; touchMove.x = touchMove.y = 0; touchSprint = false; stickEl.classList.remove('on'); }
+    if (t.identifier === lookId) lookId = null;
+    if (t.identifier === jumpId) { touchJump = false; jumpId = null; $('tJump').classList.remove('down'); }
+  }
+}
+function resetTouch() {
+  fireIds.clear(); firing = false; touchMove.id = null; touchMove.x = touchMove.y = 0; touchSprint = false; lookId = null; touchJump = false; jumpId = null; aiming = false;
+  stickEl.classList.remove('on'); document.querySelectorAll('.tbtn').forEach(b => b.classList.remove('down', 'on'));
+}
+const touchEl = $('touch');
+touchEl.addEventListener('touchstart', onTouchStart, { passive: false });
+touchEl.addEventListener('touchmove', onTouchMove, { passive: false });
+touchEl.addEventListener('touchend', onTouchEnd, { passive: false });
+touchEl.addEventListener('touchcancel', onTouchEnd, { passive: false });
+
 addEventListener('mousedown', e => {
   if (state !== 'play') return;
   if (e.button === 0) { firing = true; if (fireCD <= 0) shoot(); }
