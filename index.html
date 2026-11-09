@@ -1110,7 +1110,7 @@ const RF = {
     const ox = along ? 0 : (x > 0 ? -1 : 1) * (w / 2 - 0.1), oz = along ? (z > camp.midZ ? -1 : 1) * (d / 2 - 0.1) : 0;
     addStatic(boxGeo, M.pipe, x + ox, 2.1, z + oz, 0, 0, 0, along ? L : 0.08, 0.08, along ? 0.08 : L, { ghost: true });
     for (let t = -L / 2; t <= L / 2; t += 3) addStatic(boxGeo, M.pipe, x + ox + (along ? t : 0), 1.6, z + oz + (along ? 0 : t), 0, 0, 0, 0.08, 1.0, 0.08, { ghost: true });
-    glow(x, 1.22, z, along ? L : w + 0.04, 0.05, along ? d + 0.04 : L, mr() < 0.5 ? A.orange : M.neonM);
+    glow(x, 1.22, z, along ? L : 0.08, 0.05, along ? 0.08 : L, mr() < 0.5 ? A.orange : M.neonM);
   },
   header(z, w) {},
   corridor(z0, z1) {         // glass skybridge
