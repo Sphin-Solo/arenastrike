@@ -6444,12 +6444,14 @@ const _rootP = new THREE.Vector3(), _rootR = new THREE.Euler(), _hipP = new THRE
 let wasAiming3 = false, movRoll3 = 0, movLean3 = 0, airY3 = 0, swX = 0, swY = 0, idle3 = 0, settle3 = 0;
 for (const id in VMM) { const W = VMM[id]; if (W.magSpare) W.magSpare.userData.rest = { p: W.magRest.clone(), r: new THREE.Euler() }; if (W.mag) W.mag.userData.rest = { p: W.magRest.clone(), r: W.mag.rotation.clone() }; }
 function poseVM(dt, sprint) {
-  const W = vm.W; if (!W) return;
-  const w = WD[cur], c = vm.clip, t = vm.t;
-  // switching: holster the old weapon, then bring the new one up
+  if (!vm.W) return;
+  // switching: holster the old weapon, then bring the new one up (may swap vm.W / cur, so read them afterwards)
   let hol = 0;
   if (vm.sw) { vm.sw.t += dt; hol = vm.sw.hol > 0 ? Math.min(1, vm.sw.t / vm.sw.hol) : 1; if (hol >= 1) { finishSwitch(); hol = 0; } }
   else evalClip(dt);
+  const W = vm.W, w = WD[cur];
+  for (const k in VMM) if (VMM[k] !== W && VMM[k].root.visible) VMM[k].root.visible = false;
+  if (W !== VMM.blade && VMM.blade.arm) VMM.blade.arm.visible = false;
   const am = 1 - aimT * 0.9;
   // base: hip -> ADS
   const adsK = W.noAds || w.melee ? 0 : easeIO(Math.min(1, aimT));
