@@ -4529,7 +4529,7 @@ function updateHUD(dt) {
   if (hud.ammo !== ak) {
     hud.ammo = ak;
     if (w.melee) { el.ammo.textContent = '∞'; el.ares.textContent = ''; }
-    else { el.ammo.textContent = ammo; el.ares.textContent = cur === 'rocket' ? '' : res; }
+    else { el.ammo.textContent = ammo; el.ares.textContent = cur === 'rocket' ? '' : res === Infinity ? '∞' : res; }
     el.ammo.classList.toggle('low', !w.melee && ammo <= Math.ceil(w.mag * 0.25));
     el.ares.classList.toggle('low', !w.melee && res === 0);
     if (w.melee) { if (hud.pips !== '') { hud.pips = ''; el.pips.innerHTML = ''; } }
@@ -6177,7 +6177,7 @@ function updateTrail3(dt, W, active) {
 const loadout = { primary: 'rifle', secondary: 'pistol', melee: 'blade', special: null };
 let curSlot = 'primary', lastSlot = 'secondary';
 const inv = {};
-function giveWeapon(id, full) { const W = WD[id]; inv[id] = { mag: W.mag, res: full === false ? 0 : W.res, raised: false }; }
+function giveWeapon(id, full) { const W = WD[id]; inv[id] = { mag: W.mag, res: W.res > 0 ? Infinity : 0, raised: false }; }   // unlimited reserve: only the magazine runs dry
 function refillAll() { for (const s of ['primary', 'secondary']) { const id = loadout[s]; if (id) giveWeapon(id); } if (inv[cur]) { ammo = inv[cur].mag; } MAG = WD[cur].mag || 1; }
 let cur = 'rifle', semiHeld = false, ultBackT = 0, prevWeapon = 'rifle';
 const ammoStore = new Proxy({}, { get: (o, k) => (k === 'rocket' ? (inv.rocket ? inv.rocket.mag : 0) : inv[k] ? inv[k].mag : 0), set: (o, k, v) => { if (k === 'rocket') { if (!inv.rocket) inv.rocket = { mag: 0, res: 0 }; inv.rocket.mag = v; } else if (inv[k]) inv[k].mag = v; return true; } });
