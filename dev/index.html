@@ -944,6 +944,7 @@ const MAPS = [
 ];
 let mapId = -1, chestReady = false;
 function applyMap(id) {
+  try { clearHoles(); } catch (e) {}
   if (mapRoot) { scene.remove(mapRoot); mapRoot.traverse(o => { if (o.geometry && !o.geometry.userData.keep) o.geometry.dispose(); }); }
   mapRoot = new THREE.Group(); scene.add(mapRoot);
   colliders.length = 0; solids.length = 0;
@@ -2510,9 +2511,9 @@ function updateParticles(dt) {
 
 // plasma bolt tracers + impact flashes
 const tracers = [];
-for (let i = 0; i < 12; i++) {
-  const outer = new THREE.Mesh(boxGeo, new THREE.MeshBasicMaterial({ color: 0x22e8ff, transparent: true, opacity: 0, fog: false, depthWrite: false, blending: THREE.AdditiveBlending }));
-  const core = new THREE.Mesh(boxGeo, new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0, fog: false, depthWrite: false, blending: THREE.AdditiveBlending }));
+for (let i = 0; i < 24; i++) {
+  const outer = new THREE.Mesh(boxGeo, new THREE.MeshBasicMaterial({ color: 0xff9a40, transparent: true, opacity: 0, fog: false, depthWrite: false, blending: THREE.AdditiveBlending }));
+  const core = new THREE.Mesh(boxGeo, new THREE.MeshBasicMaterial({ color: 0xfff2cc, transparent: true, opacity: 0, fog: false, depthWrite: false, blending: THREE.AdditiveBlending }));
   core.scale.set(0.35, 0.35, 1); outer.add(core); outer.frustumCulled = false; core.frustumCulled = false;
   scene.add(outer); tracers.push({ m: outer, core, life: 0, len: 1 });
 }
@@ -2522,10 +2523,11 @@ function addTracer(a, b, w) {
   w = w || 1;
   const t = tracers[trHead]; trHead = (trHead + 1) % tracers.length;
   trDir.subVectors(b, a); const len = trDir.length() || 0.01; trDir.multiplyScalar(1 / len);
-  t.m.position.copy(a).addScaledVector(trDir, len / 2);
   t.m.quaternion.setFromUnitVectors(trZ, trDir);
-  t.len = len; t.w = w; t.m.scale.set(0.035 * w, 0.035 * w, len); t.life = 0.08;
-  t.m.material.opacity = 0.9; t.core.material.opacity = 1;
+  if (!t.a) { t.a = new THREE.Vector3(); t.d = new THREE.Vector3(); }
+  t.a.copy(a); t.d.copy(trDir); t.full = len; t.pos = 0; t.seg = Math.min(len, 3.2 * Math.max(0.6, w));
+  t.len = t.seg; t.w = w; t.life = 1;
+  t.m.material.opacity = 0.75; t.core.material.opacity = 1; tracerPlace(t);
 }
 const impacts = [];
 for (let i = 0; i < 10; i++) {
@@ -2537,11 +2539,17 @@ function addImpact(p, size, color) {
   const im = impacts[imHead]; imHead = (imHead + 1) % impacts.length;
   im.s.position.copy(p); im.size = size; im.life = 0.09; im.s.material.color.setHex(color || SKINS[skin].flash);
 }
+function tracerPlace(t) {
+  const head = Math.min(t.full, t.pos + t.seg), tail = Math.max(0, t.pos), L = Math.max(0.01, head - tail);
+  t.m.position.copy(t.a).addScaledVector(t.d, (head + tail) / 2);
+  const th = 0.014 * (t.w || 1); t.m.scale.set(th, th, L);
+}
 function updateTracers(dt) {
   for (const t of tracers) if (t.life > 0) {
-    t.life -= dt; const k = Math.max(0, t.life / 0.08);
-    t.m.material.opacity = k * 0.9; t.core.material.opacity = k;
-    t.m.scale.set((0.035 * k + 0.004) * (t.w || 1), (0.035 * k + 0.004) * (t.w || 1), t.len);
+    if (t.full === undefined) { t.life = 0; continue; }
+    t.pos += dt * 420;
+    if (t.pos >= t.full) { t.life = 0; t.m.material.opacity = 0; t.core.material.opacity = 0; continue; }
+    tracerPlace(t);
   }
   for (const im of impacts) if (im.life > 0) {
     im.life -= dt; const k = Math.max(0, im.life / 0.09);
@@ -6507,6 +6515,29 @@ function updateCamera(dt, sprint) {
   if (flashLight.intensity > 0) { muzzleWorld(flashLight.position); }
   updateTracers(dt); updateCases(dt); updateSmoke(dt); updateDrops(dt);
 }
+// ---- world impacts: bullet holes, dust, sparks ----
+const holeTex = tex(64, 64, (g, w, h) => {
+  g.clearRect(0, 0, w, h);
+  const gr = g.createRadialGradient(32, 32, 0, 32, 32, 30); gr.addColorStop(0, 'rgba(8,8,8,1)'); gr.addColorStop(0.18, 'rgba(15,14,13,.95)'); gr.addColorStop(0.32, 'rgba(60,56,50,.55)'); gr.addColorStop(0.6, 'rgba(40,38,34,.18)'); gr.addColorStop(1, 'rgba(0,0,0,0)');
+  g.fillStyle = gr; g.beginPath(); g.arc(32, 32, 30, 0, 7); g.fill();
+  g.strokeStyle = 'rgba(20,20,20,.5)'; g.lineWidth = 1; for (let i = 0; i < 7; i++) { const a = Math.random() * 6.28, r0 = 6, r1 = 10 + Math.random() * 12; g.beginPath(); g.moveTo(32 + Math.cos(a) * r0, 32 + Math.sin(a) * r0); g.lineTo(32 + Math.cos(a) * r1, 32 + Math.sin(a) * r1); g.stroke(); }
+});
+const holeMat = new THREE.MeshBasicMaterial({ map: holeTex, transparent: true, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -4, polygonOffsetUnits: -4 });
+const holeGeo = new THREE.PlaneGeometry(0.11, 0.11);
+const holes = []; let holeHead = 0;
+for (let i = 0; i < 70; i++) { const m = new THREE.Mesh(holeGeo, holeMat); m.visible = false; m.matrixAutoUpdate = true; scene.add(m); holes.push(m); }
+const _hn = new THREE.Vector3(), _hq = new THREE.Vector3();
+function impactFx(pt, normal, obj, small) {
+  _hn.set(0, 1, 0);
+  if (normal && obj) { _hn.copy(normal).transformDirection(obj.matrixWorld); }
+  const h = holes[holeHead]; holeHead = (holeHead + 1) % holes.length;
+  h.position.copy(pt).addScaledVector(_hn, 0.004); _hq.copy(h.position).add(_hn); h.lookAt(_hq); h.rotateZ(Math.random() * 6.28); h.scale.setScalar(small ? 0.6 : 0.8 + Math.random() * 0.4); h.visible = true;
+  emit(pt.x + _hn.x * 0.05, pt.y + _hn.y * 0.05, pt.z + _hn.z * 0.05, 0.58, 0.54, 0.48, small ? 3 : 7, 2.2, 1.1);
+  if (Math.random() < 0.6) emit(pt.x, pt.y, pt.z, 1, 0.78, 0.4, small ? 2 : 4, 6, 0.35);
+  addImpact(pt, small ? 0.25 : 0.4, 0xffc070);
+  if (!small && Math.random() < 0.5) puffSmoke(pt, _hn, 1, 0.25);
+}
+function clearHoles() { for (const h of holes) h.visible = false; }
 
 
 
