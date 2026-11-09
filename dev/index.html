@@ -2570,10 +2570,10 @@ function updateTracers(dt) {
 // --- lighting for the viewmodel scene: neutral studio key/fill/rim, tinted per map ---
 gunRimC.color.setHex(0xcfd8e6); gunRimC.intensity = 0.25; gunRimM.color.setHex(0xffe2c0); gunRimM.intensity = 0.18;
 gunSun.intensity = 0.0;
-const vmKey = new THREE.DirectionalLight(0xfff1dd, 0.85); vmKey.position.set(1.2, 2.2, 0.8); gunScene.add(vmKey);
+const vmKey = new THREE.DirectionalLight(0xfff1dd, 0.6); vmKey.position.set(2.2, 1.3, 0.5); gunScene.add(vmKey);
 const vmFill = new THREE.DirectionalLight(0xbfd3ff, 0.32); vmFill.position.set(-2, 0.6, 0.6); gunScene.add(vmFill);
-const vmBack = new THREE.DirectionalLight(0xffffff, 0.45); vmBack.position.set(-0.5, 1.2, -2.5); gunScene.add(vmBack);
-const vmHemi = gunScene.children.find(o => o.isHemisphereLight); if (vmHemi) { vmHemi.color.setHex(0xd8e2f0); vmHemi.groundColor.setHex(0x2a2622); vmHemi.intensity = 0.45; }
+const vmBack = new THREE.DirectionalLight(0xffffff, 0.12); vmBack.position.set(-0.5, 1.2, -2.5); gunScene.add(vmBack);
+const vmHemi = gunScene.children.find(o => o.isHemisphereLight); if (vmHemi) { vmHemi.color.setHex(0xd8e2f0); vmHemi.groundColor.setHex(0x2a2622); vmHemi.intensity = 0.55; }
 gunFlashLight.color.setHex(0xffb060);
 const vmEnv = (() => {
   const es = new THREE.Scene(); es.background = new THREE.Color(0x1a1c20);
@@ -2626,18 +2626,19 @@ const M3 = {
 };
 // colours above are authored in sRGB; the renderer outputs sRGB, so convert them once
 for (const k in M3) { const m = M3[k]; if (m.color) m.color.convertSRGBToLinear(); if (m.isMeshStandardMaterial && m.envMapIntensity === 1) m.envMapIntensity = 0.35; }
-M3.alu.roughness = 0.62; M3.alu.metalness = 0.25; M3.park.roughness = 0.55; M3.park.metalness = 0.5; M3.blk.roughness = 0.7;
+M3.alu.roughness = 0.72; M3.alu.metalness = 0.2; M3.park.roughness = 0.68; M3.park.metalness = 0.35; M3.blued.roughness = Math.max(M3.blued.roughness, 0.5);
+for (const k in M3) if (!['lens', 'coat', 'blade'].includes(k) && M3[k].envMapIntensity !== undefined) M3[k].envMapIntensity *= 0.35; M3.blk.roughness = 0.7;
 for (const t of [VMT.camo, VMT.polymer, VMT.metal, VMT.fabric, T3.wood, T3.wrap, T3.blade]) t.encoding = THREE.sRGBEncoding;
 // --- modelling kit ---
 const _geoCache = new Map();
-function rbGeo(w, h, d, r) {
-  const key = 'rb' + w + '|' + h + '|' + d + '|' + r; let g = _geoCache.get(key); if (g) return g;
+function rbGeo(w, h, d, r, seg) {
+  const key = 'rb' + w + '|' + h + '|' + d + '|' + r + '|' + (seg || 2); let g = _geoCache.get(key); if (g) return g;
   r = Math.min(r, w / 2 - 1e-4, h / 2 - 1e-4, d / 2 - 1e-4);
   const s = new THREE.Shape(), x0 = -w / 2 + r, y0 = -h / 2 + r, x1 = w / 2 - r, y1 = h / 2 - r;
   s.moveTo(x0, -h / 2 + r * 0); s.moveTo(x0, y0 - r * 0);
   // rect inset by r; bevel adds r all round
   s.moveTo(x0, y0); s.lineTo(x1, y0); s.lineTo(x1, y1); s.lineTo(x0, y1); s.lineTo(x0, y0);
-  g = new THREE.ExtrudeGeometry(s, { depth: Math.max(1e-4, d - 2 * r), bevelEnabled: true, bevelThickness: r, bevelSize: r, bevelSegments: 2, curveSegments: 3 });
+  g = new THREE.ExtrudeGeometry(s, { depth: Math.max(1e-4, d - 2 * r), bevelEnabled: true, bevelThickness: r, bevelSize: r, bevelSegments: seg || 2, curveSegments: 3 });
   g.translate(0, 0, -(d - 2 * r) / 2); g.computeVertexNormals(); _geoCache.set(key, g); return g;
 }
 const _unitBox = new THREE.BoxGeometry(1, 1, 1);
@@ -2701,6 +2702,10 @@ const GL3 = { glove: new THREE.MeshStandardMaterial({ color: 0x4d463a, roughness
   sleeve: new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.95, metalness: 0, map: VMT.camo, bumpMap: VMT.fabric, bumpScale: 0.0014 }),
   strap: new THREE.MeshStandardMaterial({ color: 0x2a2b26, roughness: 0.95, metalness: 0, map: VMT.fabric }) };
 const _ax = new THREE.Vector3(0, 1, 0);
+// glove pieces: same as B() but always near-capsule rounded so fingers read as fingers, not blocks
+function BG(par, w, h, d, x, y, z, m, r, rx, ry, rz) { const o = new THREE.Mesh(rbGeo(+w.toFixed(4), +h.toFixed(4), +d.toFixed(4), Math.min(w, h, d) * 0.47, 4), m); o.position.set(x, y, z); if (rx || ry || rz) o.rotation.set(rx || 0, ry || 0, rz || 0); par.add(o); return o; }
+const gloveTex = tex(128, 128, (g, w, hh) => { g.fillStyle = '#8a8a8a'; g.fillRect(0, 0, w, hh); const id = g.getImageData(0, 0, w, hh); for (let i = 0; i < id.data.length; i += 4) { const n = (Math.random() - 0.5) * 26; id.data[i] += n; id.data[i + 1] += n; id.data[i + 2] += n; } g.putImageData(id, 0, 0); g.strokeStyle = 'rgba(0,0,0,.25)'; g.lineWidth = 1; for (let y = 8; y < hh; y += 32) { g.beginPath(); g.moveTo(0, y); g.lineTo(w, y + 4); g.stroke(); } }, true);
+gloveTex.encoding = THREE.sRGBEncoding; GL3.glove.map = gloveTex; GL3.glove.bumpMap = gloveTex; GL3.glove.bumpScale = 0.0006; GL3.palm.map = gloveTex; GL3.glove.color.setHex(0x6a604e).convertSRGBToLinear(); GL3.palm.color.setHex(0x7a6a56).convertSRGBToLinear();
 function seg3(par, from, dir, len, r0, r1, m) { const d = dir.clone().normalize(); const c = new THREE.Mesh(cylGeo(r0, r1, 12), m); c.scale.y = len; c.quaternion.setFromUnitVectors(_ax, d); c.position.copy(from).addScaledVector(d, len / 2); par.add(c); return c; }
 function forearm(par, from, dir, len, watch) {
   const d = dir.clone().normalize(), p = k => from.clone().addScaledVector(d, k);
@@ -2724,18 +2729,18 @@ for (const k in GL3) { const m = GL3[k]; if (m.color) m.color.convertSRGBToLinea
 function handR(par, opts) {
   const o = opts || {}, h = new THREE.Group(); par.add(h);
   const gy = -0.045, gz = 0.03;      // palm centre relative to grip top
-  B(h, 0.056, 0.082, 0.07, 0.006, gy, gz + 0.012, GL3.glove, 0.012, -0.28);                    // palm/back
-  B(h, 0.014, 0.06, 0.05, 0.034, gy + 0.004, gz + 0.004, GL3.knuckle, 0.004, -0.3);             // knuckle guard
+  BG(h, 0.056, 0.082, 0.07, 0.006, gy, gz + 0.012, GL3.glove, 0.012, -0.28);                    // palm/back
+  BG(h, 0.014, 0.06, 0.05, 0.034, gy + 0.004, gz + 0.004, GL3.knuckle, 0.004, -0.3);             // knuckle guard
   for (let i = 0; i < 3; i++) {                                                                   // middle/ring/little fingers round the front strap
     const y = gy + 0.022 - i * 0.022, z = gz - 0.026 + i * 0.006;
-    B(h, 0.024, 0.019, 0.032, 0.024, y, z, GL3.glove, 0.006);
-    B(h, 0.036, 0.018, 0.02, 0.0, y, z - 0.024, GL3.glove, 0.006);
-    B(h, 0.017, 0.017, 0.02, -0.022, y, z - 0.012, GL3.glove, 0.006);
+    BG(h, 0.024, 0.019, 0.032, 0.024, y, z, GL3.glove, 0.006);
+    BG(h, 0.036, 0.018, 0.02, 0.0, y, z - 0.024, GL3.glove, 0.006);
+    BG(h, 0.017, 0.017, 0.02, -0.022, y, z - 0.012, GL3.glove, 0.006);
   }
   const tf = new THREE.Group(); tf.position.set(0.024, gy + 0.05, gz - 0.02); h.add(tf); h.userData.trigger = tf;     // index finger on/along the trigger
-  B(tf, 0.017, 0.017, 0.042, 0, 0, -0.02, GL3.glove, 0.006); const tip = B(tf, 0.016, 0.016, 0.026, -0.008, -0.01, -0.048, GL3.glove, 0.006); tip.rotation.x = 0.55;
-  B(h, 0.019, 0.022, 0.058, -0.03, gy + 0.05, gz - 0.006, GL3.glove, 0.007, -0.15);              // thumb
-  B(h, 0.017, 0.018, 0.026, -0.029, gy + 0.058, gz - 0.046, GL3.glove, 0.006, -0.3);
+  BG(tf, 0.017, 0.017, 0.042, 0, 0, -0.02, GL3.glove, 0.006); const tip = BG(tf, 0.016, 0.016, 0.026, -0.008, -0.01, -0.048, GL3.glove, 0.006); tip.rotation.x = 0.55;
+  BG(h, 0.019, 0.022, 0.058, -0.03, gy + 0.05, gz - 0.006, GL3.glove, 0.007, -0.15);              // thumb
+  BG(h, 0.017, 0.018, 0.026, -0.029, gy + 0.058, gz - 0.046, GL3.glove, 0.006, -0.3);
   const wr = new THREE.Object3D(); wr.position.set(0.012, gy - 0.03, gz + 0.035); h.add(wr); h.userData.wrist = wr;
   if (!o.noArm) forearm(h, new THREE.Vector3(0.012, gy - 0.03, gz + 0.035), ARM_R3, 0.6, false);
   return h;
@@ -2743,10 +2748,10 @@ function handR(par, opts) {
 // left hand: palm up under a handguard whose underside is at the group origin
 function handL(par, opts) {
   const o = opts || {}, h = new THREE.Group(); par.add(h);
-  B(h, 0.078, 0.042, 0.098, 0, -0.022, 0.004, GL3.glove, 0.012);
-  B(h, 0.012, 0.036, 0.07, -0.043, -0.018, 0.008, GL3.knuckle, 0.004);
-  for (let i = 0; i < 4; i++) { const z = -0.04 + i * 0.025; B(h, 0.022, 0.02, 0.021, 0.042, -0.012, z, GL3.glove, 0.006); B(h, 0.017, 0.034, 0.019, 0.05, 0.014, z, GL3.glove, 0.006); }
-  B(h, 0.02, 0.048, 0.06, -0.048, 0.008, 0.01, GL3.glove, 0.007); B(h, 0.018, 0.02, 0.028, -0.046, 0.036, -0.016, GL3.glove, 0.006);
+  BG(h, 0.078, 0.042, 0.098, 0, -0.022, 0.004, GL3.glove, 0.012);
+  BG(h, 0.012, 0.036, 0.07, -0.043, -0.018, 0.008, GL3.knuckle, 0.004);
+  for (let i = 0; i < 4; i++) { const z = -0.04 + i * 0.025; BG(h, 0.022, 0.02, 0.021, 0.042, -0.012, z, GL3.glove, 0.006); BG(h, 0.017, 0.034, 0.019, 0.05, 0.014, z, GL3.glove, 0.006); }
+  BG(h, 0.02, 0.048, 0.06, -0.048, 0.008, 0.01, GL3.glove, 0.007); BG(h, 0.018, 0.02, 0.028, -0.046, 0.036, -0.016, GL3.glove, 0.006);
   forearm(h, new THREE.Vector3(-0.022, -0.035, 0.035), ARM_L3, 0.62, true);
   return h;
 }
@@ -5432,8 +5437,8 @@ function mdlVX9() {
   C(b, 0.008, 0.06, 0, 0.042, -0.31, M3.park, 'z', 12); C(b, 0.016, 0.03, 0, 0.042, -0.34, M3.park, 'z', 6);
   for (let i = 0; i < 3; i++) B(b, 0.034, 0.003, 0.005, 0, 0.042, -0.33 - i * 0.008, M3.blk);
   // front sight hood + diopter drum
-  PR(b, [[0.24, 0.066], [0.29, 0.066], [0.29, 0.1], [0.24, 0.1]], 0.03, M3.park, 0.002, [[[0.25, 0.072], [0.28, 0.072], [0.28, 0.096], [0.25, 0.096]]]);
-  B(b, 0.003, 0.014, 0.003, 0, 0.078, -0.265, M3.park);
+  PR(b, [[0.24, 0.05], [0.29, 0.05], [0.29, 0.082], [0.24, 0.082]], 0.03, M3.park, 0.002, [[[0.25, 0.056], [0.28, 0.056], [0.28, 0.078], [0.25, 0.078]]]);
+  B(b, 0.003, 0.012, 0.003, 0, 0.062, -0.265, M3.park);
   C(b, 0.012, 0.024, 0, 0.086, 0.06, M3.park, 'x', 14);
   // cocking tube and handle (the "slap" lever) on the left
   C(b, 0.01, 0.2, -0.016, 0.076, -0.16, M3.park, 'z', 10);
@@ -5449,7 +5454,7 @@ function mdlVX9() {
   const opt = new THREE.Group(); opt.position.set(0, 0.06, 0.0); b.add(opt);
   B(opt, 0.03, 0.012, 0.07, 0, 0.006, 0, M3.alu, 0.003);
   for (const s of [-1, 1]) B(opt, 0.006, 0.044, 0.05, s * 0.019, 0.034, -0.006, M3.alu, 0.002);
-  B(opt, 0.044, 0.008, 0.05, 0, 0.058, -0.006, M3.alu, 0.003); B(opt, 0.032, 0.022, 0.03, 0, 0.022, 0.026, M3.alu, 0.003);
+  B(opt, 0.044, 0.008, 0.05, 0, 0.058, -0.006, M3.alu, 0.003); B(opt, 0.032, 0.012, 0.03, 0, 0.016, 0.026, M3.alu, 0.003);
   const g1 = new THREE.Mesh(new THREE.PlaneGeometry(0.032, 0.03), M3.coat); g1.position.set(0, 0.038, -0.03); opt.add(g1);
   reticle(opt, 'holo', 0.03, 0, 0.038, -0.028);
   W.sight = new THREE.Vector3(0, 0.098, -0.01);
@@ -6114,7 +6119,7 @@ for (const id in WD) {
   const W = WD[id].mdl(); W.wid = id; VMM[id] = W;
   if (!W.sight) W.sight = new THREE.Vector3(0, 0.1, 0); if (!W.adsDist) W.adsDist = 0.2;
   if (WD[id].melee) { W.hip.set(SW_IDLE[0], SW_IDLE[1], SW_IDLE[2]); }
-  if (W.pistol) W.hip.add(new THREE.Vector3(-0.015, 0.03, -0.045)); else if (!WD[id].melee) W.hip.add(new THREE.Vector3(-0.02, 0.028, -0.07));
+  if (W.pistol) { W.hip.add(new THREE.Vector3(-0.012, 0.012, -0.05)); W.hipRot = new THREE.Vector3(0.04, 0.2, 0.08); W.adsDist = Math.max(W.adsDist, 0.42); } else if (!WD[id].melee) W.hip.add(new THREE.Vector3(-0.02, 0.028, -0.07));
   W.root.traverse(o => { if (o.isMesh) { o.frustumCulled = false; } });
   W.adsPos = new THREE.Vector3(-W.sight.x, -W.sight.y, -W.adsDist - W.sight.z);
   const parts = Object.assign({}, W.p, { mag: W.mag, spare: W.magSpare });
@@ -6462,6 +6467,7 @@ function poseVM(dt, sprint) {
   const adsK = W.noAds || w.melee ? 0 : easeIO(Math.min(1, aimT));
   _hipP.copy(W.hip).lerp(W.adsPos, adsK);
   let px = _hipP.x, py = _hipP.y, pz = _hipP.z, rx = 0, ry = 0, rz = 0;
+  if (W.hipRot) { const k = 1 - adsK; rx += W.hipRot.x * k; ry += W.hipRot.y * k; rz += W.hipRot.z * k; }
   // clip root
   if (vm.clip && vm.clip.tr.root) { evalVec(vm.clip.tr.root, vm.t, _ofs); const s = vm.cname === 'reload' ? 1 - aimT : 1; px += _ofs[0] * s; py += _ofs[1] * s; pz += _ofs[2] * s; rx += _ofs[3] * s; ry += _ofs[4] * s; rz += _ofs[5] * s; }
   // holster
