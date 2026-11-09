@@ -5371,7 +5371,7 @@ function mdlKV4() {
   C(opt, 0.019, 0.075, 0, 0.034, 0, M3.alu, 'z', 20, undefined, true); C(opt, 0.0205, 0.012, 0, 0.034, -0.036, M3.alu, 'z', 20, undefined, true); C(opt, 0.0205, 0.012, 0, 0.034, 0.036, M3.alu, 'z', 20, undefined, true);
   C(opt, 0.008, 0.016, 0.022, 0.034, 0.0, M3.alu, 'x', 12); C(opt, 0.008, 0.016, 0, 0.056, 0.0, M3.alu, 'y', 12);
   const lensF = new THREE.Mesh(new THREE.CircleGeometry(0.0165, 24), M3.coat); lensF.position.set(0, 0.034, -0.0425); opt.add(lensF);
-  reticle(opt, 'dot', 0.012, 0, 0.034, -0.04);
+  reticle(opt, 'dot', 0.022, 0, 0.034, -0.04);
   W.sight = new THREE.Vector3(0, 0.078 + 0.034, -0.03);
   // magazine
   const magP = new THREE.Group(); magP.position.set(0, -0.022, -0.122); b.add(magP); W.mag = magP; arMag(magP, 0.018, 0.155);
@@ -5441,7 +5441,7 @@ function mdlVX9() {
   // front sight hood + diopter drum
   PR(b, [[0.24, 0.05], [0.29, 0.05], [0.29, 0.082], [0.24, 0.082]], 0.03, M3.park, 0.002, [[[0.25, 0.056], [0.28, 0.056], [0.28, 0.078], [0.25, 0.078]]]);
   B(b, 0.003, 0.012, 0.003, 0, 0.062, -0.265, M3.park);
-  C(b, 0.012, 0.024, 0, 0.086, 0.06, M3.park, 'x', 14);
+  C(b, 0.01, 0.024, 0, 0.066, 0.06, M3.park, 'x', 14);
   // cocking tube and handle (the "slap" lever) on the left
   C(b, 0.01, 0.2, -0.016, 0.076, -0.16, M3.park, 'z', 10);
   const ch = new THREE.Group(); ch.position.set(-0.022, 0.078, -0.22); b.add(ch); W.p.ch = ch;
@@ -5497,7 +5497,7 @@ function mdlRS12() {
   addFlash(W, 0, 0.05, -0.7); addEject(W, 0.03, 0.04, -0.04);
   W.rh = handR(b); W.lh = handL(b); W.a.fore = [new THREE.Vector3(0, -0.026, -0.05), 0, pump];
   W.a.port = new THREE.Vector3(0, -0.03, -0.07);
-  W.hip = new THREE.Vector3(0.16, -0.195, -0.3); W.adsDist = 0.18; W.len = 0.7;
+  W.hip = new THREE.Vector3(0.16, -0.195, -0.3); W.adsDist = 0.27; W.len = 0.7;
   return W;
 }
 // ---------- KS-12 semi-auto magazine shotgun ----------
@@ -5521,7 +5521,7 @@ function mdlKS12() {
   const opt = new THREE.Group(); opt.position.set(0, 0.068, -0.04); b.add(opt);
   B(opt, 0.026, 0.014, 0.036, 0, 0.004, 0, M3.alu, 0.002); C(opt, 0.017, 0.06, 0, 0.03, 0, M3.alu, 'z', 18, undefined, true);
   const lf = new THREE.Mesh(new THREE.CircleGeometry(0.015, 20), M3.coat); lf.position.set(0, 0.03, -0.031); opt.add(lf);
-  reticle(opt, 'dot', 0.012, 0, 0.03, -0.029);
+  reticle(opt, 'dot', 0.022, 0, 0.03, -0.029);
   W.sight = new THREE.Vector3(0, 0.098, -0.04);
   const magP = new THREE.Group(); magP.position.set(0, -0.004, -0.14); b.add(magP); W.mag = magP;
   { const g = new THREE.Group(); magP.add(g); PR(g, [[-0.04, 0], [0.05, 0], [0.065, -0.13], [-0.025, -0.135]], 0.03, M3.blk, 0.004); B(g, 0.034, 0.012, 0.09, 0, -0.136, -0.018, M3.blk2, 0.004); C(g, 0.0095, 0.05, 0, 0.004, -0.006, M3.shell, 'z', 12); }
@@ -5639,7 +5639,7 @@ function mdlMK46() {
   W.sight = new THREE.Vector3(0, 0.122, -0.04);
   { const opt = new THREE.Group(); opt.position.set(0, 0.027, -0.12); cover.add(opt); W.p.optic = opt;
     B(opt, 0.024, 0.016, 0.036, 0, 0.0, 0, M3.alu, 0.002); C(opt, 0.017, 0.06, 0, 0.025, 0, M3.alu, 'z', 18, undefined, true);
-    const lf = new THREE.Mesh(new THREE.CircleGeometry(0.015, 20), M3.coat); lf.position.set(0, 0.025, -0.031); opt.add(lf); reticle(opt, 'dot', 0.012, 0, 0.025, -0.029); }
+    const lf = new THREE.Mesh(new THREE.CircleGeometry(0.015, 20), M3.coat); lf.position.set(0, 0.025, -0.031); opt.add(lf); reticle(opt, 'dot', 0.022, 0, 0.025, -0.029); }
   addFlash(W, 0, 0.034, -0.79); addEject(W, 0.04, -0.02, -0.03);
   W.rh = handR(b); W.lh = handL(b); W.a.fore = [new THREE.Vector3(0, -0.005, -0.38), 0];
   W.a.cover = new THREE.Vector3(0, 0.12, -0.18); W.a.ch = new THREE.Vector3(0.07, 0.03, -0.18);
