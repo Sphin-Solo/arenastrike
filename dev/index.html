@@ -3891,7 +3891,6 @@ function campRoomAtZ(z) { for (const r of camp.rooms) if (z <= r.zTop + 0.5 && z
   await buildArsenal2();
   await buildBossBank();
   await buildSound2();
-  buildWyrmBank();
 })();
 
 function initAudio() {
@@ -4516,7 +4515,7 @@ function updateHUD(dt) {
   const hp = Math.ceil(health);
   hud.ghost += (hp - hud.ghost) * Math.min(1, dt * (hp < hud.ghost ? 1.6 : 20));
   if (hud.hp !== hp) { hud.hp = hp; el.hptxt.textContent = hp; el.hpfill.style.transform = 'scaleX(' + (hp / 100) + ')'; el.hpfill.classList.toggle('low', hp < 35); }
-  el.hpghost.style.transform = 'scaleX(' + (hud.ghost / 100).toFixed(3) + ')';
+  const gh = Math.round(hud.ghost * 4) / 400; if (hud.gh !== gh) { hud.gh = gh; el.hpghost.style.transform = 'scaleX(' + gh + ')'; }
   // weapon panel
   const w = WD[cur], it = inv[cur], res = it ? it.res : 0;
   const ak = cur + '|' + ammo + '|' + res;
@@ -4526,10 +4525,16 @@ function updateHUD(dt) {
     else { el.ammo.textContent = ammo; el.ares.textContent = cur === 'rocket' ? '' : res; }
     el.ammo.classList.toggle('low', !w.melee && ammo <= Math.ceil(w.mag * 0.25));
     el.ares.classList.toggle('low', !w.melee && res === 0);
-    const ph = w.melee ? '' : pipsHTML(ammo, w.mag); if (hud.pips !== ph) { hud.pips = ph; el.pips.innerHTML = ph; }
+    if (w.melee) { if (hud.pips !== '') { hud.pips = ''; el.pips.innerHTML = ''; } }
+    else {
+      const cap = Math.min(w.mag, 40), key = cur + cap;
+      if (hud.pips !== key) { hud.pips = key; el.pips.innerHTML = '<i></i>'.repeat(cap); }
+      const on = Math.ceil(ammo / (w.mag / cap)), ch = el.pips.children;
+      for (let i = 0; i < ch.length; i++) { const e = i >= on; if (ch[i]._e !== e) { ch[i]._e = e; ch[i].className = e ? 'e' : ''; } }
+    }
   }
   if (hud.w !== cur) { hud.w = cur; el.wname.textContent = w.name; el.wmode.textContent = w.mode; }
-  const sh = slotsHTML() + curSlot; if (hud.slots !== sh) { hud.slots = sh; el.slots.innerHTML = slotsHTML(); }
+  const sh = loadout.primary + loadout.secondary + loadout.special + curSlot; if (hud.slots !== sh) { hud.slots = sh; el.slots.innerHTML = slotsHTML(); }
   const rt = reloading ? 'RELOADING' : (!w.melee && ammo === 0 ? (res > 0 ? 'RELOAD  [R]' : 'NO AMMO') : (!w.melee && ammo <= Math.ceil(w.mag * 0.25) && res > 0 ? 'LOW AMMO' : ''));
   if (hud.reload !== rt) { hud.reload = rt; el.reload.textContent = rt; el.reload.className = rt === 'LOW AMMO' ? 'lo' : rt ? 'on' : ''; }
   // crosshair: gap follows the real bullet spread (CS style)
@@ -5391,11 +5396,11 @@ function mdlKR47() {
   C(b, 0.0095, 0.17, 0, 0.032, -0.48, M3.blued, 'z', 12);
   B(b, 0.024, 0.04, 0.03, 0, 0.05, -0.415, M3.blued, 0.003);                                                                                       // gas block
   PR(b, [[0.52, 0.018], [0.56, 0.018], [0.56, 0.095], [0.548, 0.1], [0.535, 0.095], [0.535, 0.048], [0.52, 0.045]], 0.018, M3.blued, 0.002); // front sight tower
-  B(b, 0.003, 0.016, 0.003, 0, 0.098, -0.548, M3.blued);
+  B(b, 0.003, 0.016, 0.003, 0, 0.0905, -0.548, M3.blued);
   C(b, 0.014, 0.045, 0, 0.032, -0.585, M3.blued, 'z', 12); B(b, 0.026, 0.008, 0.03, 0, 0.042, -0.59, M3.blued, 0, -0.35);                      // slant brake
   // rear tangent sight
   B(b, 0.03, 0.012, 0.07, 0, 0.078, -0.19, M3.blued, 0.002); B(b, 0.03, 0.012, 0.012, 0, 0.088, -0.215, M3.blued, 0.002);
-  B(b, 0.004, 0.006, 0.013, 0, 0.096, -0.215, M3.blued);
+  for (const sx of [-1, 1]) B(b, 0.004, 0.008, 0.013, sx * 0.0055, 0.095, -0.215, M3.blued);
   // reciprocating charging handle on the right
   const ch = new THREE.Group(); ch.position.set(0.03, 0.04, -0.12); b.add(ch); W.p.ch = ch;
   B(ch, 0.006, 0.006, 0.12, -0.003, 0, 0.04, M3.blued); C(ch, 0.007, 0.026, 0.012, 0, -0.02, M3.blued, 'x', 10);
@@ -5411,7 +5416,7 @@ function mdlKR47() {
   addFlash(W, 0, 0.032, -0.615); addEject(W, 0.03, 0.035, -0.04);
   W.rh = handR(b); W.lh = handL(b); W.a.fore = [new THREE.Vector3(0, 0.0, -0.3), 0];
   W.a.ch = new THREE.Vector3(0.05, 0.035, -0.135);
-  W.hip = new THREE.Vector3(0.155, -0.2, -0.3); W.adsDist = 0.11; W.len = 0.62;
+  W.hip = new THREE.Vector3(0.155, -0.2, -0.3); W.adsDist = 0.17; W.len = 0.62;
   return W;
 }
 // ---------- VX-9 sub-machine gun (roller-locked style) ----------
@@ -5675,7 +5680,7 @@ function mdlThumper() {
   C(b, 0.034, 0.23, 0, 0.05, -0.39, M3.park, 'z', 18); for (let i = 0; i < 4; i++) C(b, 0.036, 0.008, 0, 0.05, -0.32 - i * 0.05, M3.blk, 'z', 18);
   B(b, 0.03, 0.08, 0.034, 0, -0.04, -0.4, M3.rub, 0.008);
   const lad = new THREE.Group(); lad.position.set(0, 0.09, -0.08); b.add(lad); W.p.ladder = lad;
-  B(lad, 0.04, 0.05, 0.004, 0, 0.025, 0, M3.alu, 0.002); B(lad, 0.012, 0.004, 0.005, 0, 0.042, 0, M3.orange);
+  for (const sx of [-1, 1]) { B(lad, 0.004, 0.052, 0.004, sx * 0.018, 0.026, 0, M3.alu, 0.001); B(lad, 0.011, 0.005, 0.005, sx * 0.0095, 0.0415, 0, M3.orange, 0.001); } B(lad, 0.04, 0.004, 0.004, 0, 0.002, 0, M3.alu); B(lad, 0.04, 0.003, 0.004, 0, 0.051, 0, M3.alu);
   W.sight = new THREE.Vector3(0, 0.134, -0.08);
   const loadR = new THREE.Group(); loadR.visible = false; b.add(loadR); W.p.loadRound = loadR; C(loadR, 0.019, 0.05, 0, 0, 0, M3.brass, 'z', 14); LA(loadR, [[0, -0.045], [0.012, -0.04], [0.019, -0.025], [0.019, -0.022], [0, -0.022]], M3.green, 14);
   addFlash(W, 0, 0.05, -0.52);
@@ -5692,7 +5697,7 @@ function mdlRL7() {
   PR(b, [[0.004, 0.0], [-0.03, 0.0], [-0.058, -0.1], [-0.05, -0.112], [-0.02, -0.112], [0.008, -0.096], [0.016, -0.03]], 0.032, M3.blk, 0.005);
   B(b, 0.04, 0.03, 0.12, 0, 0.012, -0.02, M3.park, 0.006); B(b, 0.03, 0.08, 0.034, 0, -0.03, -0.28, M3.rub, 0.008);
   W.p.trigger = B(b, 0.006, 0.02, 0.006, 0, -0.015, -0.032, M3.steel, 0, 0.2);
-  B(b, 0.03, 0.05, 0.05, 0.05, 0.12, -0.12, M3.park, 0.004); const lf = new THREE.Mesh(new THREE.CircleGeometry(0.012, 16), M3.lens); lf.position.set(0.05, 0.13, -0.146); b.add(lf);
+  B(b, 0.022, 0.03, 0.05, 0.05, 0.1, -0.12, M3.park, 0.004); C(b, 0.017, 0.05, 0.05, 0.13, -0.12, M3.park, 'z', 18, undefined, true); C(b, 0.0185, 0.008, 0.05, 0.13, -0.146, M3.blk, 'z', 18, undefined, true); C(b, 0.0185, 0.008, 0.05, 0.13, -0.094, M3.blk, 'z', 18, undefined, true); reticle(b, 'dot', 0.014, 0.05, 0.13, -0.14);
   const war = new THREE.Group(); war.position.set(0, 0.07, -0.66); b.add(war); W.p.warhead = war;
   LA(war, [[0.0, -0.17], [0.012, -0.16], [0.04, -0.09], [0.048, -0.02], [0.03, 0.0], [0, 0]], M3.green, 18);
   W.sight = new THREE.Vector3(0.05, 0.13, -0.12);
@@ -5796,7 +5801,7 @@ function mdlMagnum() {
   C(b, 0.015, 0.2, 0, 0.026, -0.19, M3.steel, 'z', 16); B(b, 0.018, 0.012, 0.2, 0, 0.044, -0.19, M3.steel, 0.002); B(b, 0.02, 0.026, 0.19, 0, 0.004, -0.185, M3.steel, 0.004);
   for (let i = 0; i < 5; i++) B(b, 0.02, 0.006, 0.01, 0, 0.051, -0.11 - i * 0.03, M3.blued);
   B(b, 0.006, 0.016, 0.01, 0, 0.056, -0.28, M3.red, 0.002);
-  const ham = new THREE.Group(); ham.position.set(0, 0.04, 0.05); b.add(ham); W.p.hammer = ham;
+  const ham = new THREE.Group(); ham.position.set(0, 0.012, 0.05); b.add(ham); W.p.hammer = ham;
   B(ham, 0.01, 0.036, 0.012, 0, 0.016, 0, M3.steel, 0.002); B(ham, 0.016, 0.006, 0.02, 0, 0.034, 0.008, M3.knurl || M3.steel);
   const crane = new THREE.Group(); crane.position.set(0, 0.0, -0.03); b.add(crane); W.p.crane = crane;
   const cyl = new THREE.Group(); cyl.position.set(0, 0.024, 0); crane.add(cyl); W.p.cyl = cyl;
@@ -7210,7 +7215,12 @@ function resetBoss() {
   const keep = skin;
   for (const k in models) { gunScene.remove(models[k]); } gun.visible = false;
   for (const k in VMM) { VMM[k].root.visible = true; VMM[k].root.position.set(0.15, -0.2, -0.5); }
-  mfCoreMat.opacity = mfPetalMat.opacity = mfFwdMat.opacity = 1; renderer.render(gunScene, gunCam); mfCoreMat.opacity = mfPetalMat.opacity = mfFwdMat.opacity = 0;
+  mfCoreMat.opacity = mfPetalMat.opacity = mfFwdMat.opacity = 1; if (VMM.blade.arm) VMM.blade.arm.visible = true; renderer.render(gunScene, gunCam); mfCoreMat.opacity = mfPetalMat.opacity = mfFwdMat.opacity = 0;
+  // pre-compile everything that first appears mid-fight (bullet holes, smoke, ammo crates, corpses) so it never stalls a frame
+  holes.forEach(h => { h.visible = true; h.position.set(0, 1.5, -4); }); smoke3.forEach(q => { q.s.visible = true; q.s.position.set(0, 1.5, -4); }); drops.forEach(d => { d.g.visible = true; d.g.position.set(0, 0.2, -4); });
+  renderer.compile(scene, camera); render();
+  holes.forEach(h => { h.visible = false; }); smoke3.forEach(q => { q.s.visible = false; }); drops.forEach(d => { d.g.visible = false; });
+  { const keepMap = mapId; for (let i = 0; i < MAPS.length; i++) if (i !== keepMap) { try { applyMap(i); renderer.compile(scene, camera); } catch (e) {} } applyMap(keepMap); }
   resetLoadout(true);
   enemies.forEach(e => { e.group.visible = false; e.flashMat.opacity = 0; });
   bullets.forEach(b => { b.m.visible = false; });
