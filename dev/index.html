@@ -68,6 +68,7 @@
   @keyframes fl{0%{opacity:0}10%{opacity:1}100%{opacity:0}}
   .skins{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:16px}
   .skl{grid-column:1/4;font-size:11px;letter-spacing:.2em;opacity:.7}
+  .loadout{margin:10px 0 12px}.loadout .lrow{display:flex;gap:10px;align-items:center;font:700 13px Rajdhani,system-ui;letter-spacing:.12em;padding:5px 8px;background:#141b26;border-left:3px solid #e8f2ec;margin-top:4px}.loadout .lrow b{color:#8ea19a}.loadout small{display:block;opacity:.6;font-size:11px;margin-top:6px;letter-spacing:.03em}
   .skinbtn{background:#1b2438;color:#e8eefc;border:1px solid #2f3d5c;padding:10px;text-align:left;border-radius:9px;letter-spacing:.05em}
   .skinbtn:hover{background:#243050}
   .skinbtn b{display:block;font-size:13px}.skinbtn small{opacity:.6;font-weight:500;font-size:11px;letter-spacing:.08em}
@@ -360,7 +361,7 @@
 <div id="overlay"><div id="panel">
   <h1>ARENA <span>STRIKE</span></h1>
   <p id="sumtxt">Fight through 15 rooms across three sectors. Clear a room to unlock the door ahead, roll the weapon chest between rooms and pick an upgrade card after each one. Rooms 5, 10 and 15 hold a Warden — destroy the last one to complete the mission.</p>
-  <div class="tkeys">Left thumb: drag anywhere on the left side to move (push to the edge to sprint).<br>Right thumb: swipe to look. Hold FIRE and slide to aim while shooting.<br>AIM toggles sights · JUMP · R reloads · USE rolls the weapon chest · Q/E/C grenades · X ultimate · II pauses.</div>
+  <div class="tkeys">Left thumb: drag anywhere on the left side to move (push to the edge to sprint).<br>Right thumb: swipe to look. Hold FIRE and slide to aim while shooting.<br>AIM toggles sights · JUMP · R reloads · SWAP switches primary/sidearm · KNIFE slashes · USE rolls the weapon chest · Q/E/C grenades · X ultimate · II pauses.</div>
   <div class="keys">
     <kbd>Mouse</kbd><span>Look</span>
     <kbd>W A S D</kbd><span>Move</span>
@@ -368,8 +369,10 @@
     <kbd>Space</kbd><span>Jump (you can stand on low crates)</span>
     <kbd>Left click</kbd><span>Shoot (hold for auto)</span>
     <kbd>Right click</kbd><span>Aim down sights</span>
-    <kbd>R</kbd><span>Reload</span>
-    <kbd>F</kbd><span>Inspect weapon</span>
+    <kbd>R</kbd><span>Reload (reloading with a round chambered is faster)</span>
+    <kbd>1 2 3 / Wheel</kbd><span>Primary · Secondary · Melee</span>
+    <kbd>V</kbd><span>Quick melee (sword slash, then back to your gun)</span>
+    <kbd>F / T</kbd><span>Inspect weapon</span>
     <kbd>F (at chest)</kbd><span>Roll the weapon chest / take the weapon</span>
     <kbd>G (at chest)</kbd><span>Skip the offered weapon (keep yours, half refund)</span>
     <kbd>Q E C</kbd><span>Stun · Freeze · Flash grenades</span>
@@ -377,10 +380,9 @@
     <kbd>Esc / P</kbd><span>Pause</span>
   </div>
   <label>Sensitivity <input id="sens" type="range" min="0.4" max="3" step="0.05" value="1"><span id="sensv">1.00</span></label>
-  <div class="skins"><div class="skl">WEAPON SKIN</div>
-    <button class="skinbtn" data-skin="ironclad"><b>IRONCLAD MK4</b><small>military · realistic</small></button>
-    <button class="skinbtn" data-skin="afterglow"><b>VX-9 AFTERGLOW</b><small>neon energy rifle</small></button>
-    <button class="skinbtn" data-skin="wyrm"><b>WYRMBONE</b><small>dragon · dark</small></button></div>
+  <div class="loadout"><div class="skl">LOADOUT</div>
+    <div class="lrow"><b>1</b><span>PRIMARY · KV-4 CARBINE</span></div><div class="lrow"><b>2</b><span>SECONDARY · P-17 PISTOL</span></div><div class="lrow"><b>3</b><span>MELEE · KATANA</span></div>
+    <small>Roll the weapon chest between rooms for 14 other firearms — primaries replace slot 1, sidearms slot 2.</small></div>
   <div class="mp"><div class="skl">CO-OP MULTIPLAYER <span id="mpTag"></span></div>
     <div id="mpRows">
       <div class="mprow"><input id="mpName" maxlength="12" placeholder="Your name" autocomplete="off"><button class="mpb" id="mpHost">HOST ROOM</button></div>
@@ -3078,6 +3080,15 @@ function HEADHIT(K) {
   K.osc([K.out, room], { f0: 2400, f1: 600, d: 0.09, peak: 0.25, fm: { f0: 1800, i0: 900, i1: 0 } });
   K.noise(K.drive(3, K.out), { type: 'bandpass', f0: 3000, q: 2, d: 0.06, peak: 0.5 });
 }
+function KILL2(K, tier) {   // kill confirm: dry body thump + crisp double tick
+  const out = K.out, room = K.room(0.3, 3, 0.12);
+  K.osc(out, { f0: 125, f1: 52, d: 0.2, peak: 0.85 });
+  K.noise([out, room], { type: 'lowpass', f0: 2400, f1: 260, d: 0.13, peak: 0.55 });
+  K.noise(out, { type: 'highpass', f0: 4200, d: 0.011, peak: 0.75 });
+  K.noise(out, { type: 'highpass', f0: 3600, t: 0.034, d: 0.012, peak: 0.55 });
+  K.noise(out, { type: 'bandpass', f0: 1900, q: 3, t: 0.004, d: 0.03, peak: 0.35 });
+  for (let i = 1; i < tier; i++) K.noise(out, { type: 'highpass', f0: 3000 + i * 400, t: 0.07 + i * 0.045, d: 0.01, peak: 0.4, pan: i % 2 ? 0.4 : -0.4 });
+}
 function KILL(K, tier) {
   const out = K.out, drv = K.drive(2.4, K.gain(0.8, out)), room = K.room(1.4, 2.6, 0.28);
   const root = [55, 61.7, 65.4, 73.4, 82.4][tier - 1];
@@ -3854,7 +3865,7 @@ function campRoomAtZ(z) { for (const r of camp.rooms) if (z <= r.zTop + 0.5 && z
     bank.whiz = await Promise.all([0, 1, 2].map(() => renderSound(0.35, WHIZ)));
     bank.hit = await renderSound(0.12, HIT);
     bank.headhit = await renderSound(0.4, HEADHIT);
-    bank.kill = await Promise.all([1, 2, 3, 4, 5].map(t => renderSound(2.0, K => KILL(K, t))));
+    bank.kill = await Promise.all([1, 2, 3, 4, 5].map(t => renderSound(0.6, K => KILL2(K, t))));
     bank.cellOut = await renderSound(0.6, CELL_OUT);
     bank.cellIn = await renderSound(0.6, CELL_IN);
     bank.chargePull = await renderSound(0.45, CHARGE_PULL);
@@ -4033,7 +4044,6 @@ const SKINS = {
   wyrm: { name: 'WYRMBONE', env: 0.4, shell: 0xa8977a, shellR: 0.62, dark: 0x6a6070, darkMap: true, chrome: 0x5d5862, chromeR: 0.4, c: 0x46ffb0, m: 0x9b4dff, flash: 0x7dffc8, flash2: 0x9b4dff, holo: 0x7dffc8, led: '#46ffb0', warn: '#ff2a3c', muzzleZ: -0.9 },
 };
 let skin = 'ironclad';
-try { const sv = localStorage.getItem('arena-skin2'); if (SKINS[sv]) skin = sv; } catch (e) {}
 function applySkin(n) {
   skin = n; const K = SKINS[n];
   gm.shell.color.setHex(K.shell); gm.shell.roughness = K.shellR;
@@ -5081,9 +5091,9 @@ function onRemoteShot(id, a, b, w) {
   const av = avatars.get(id);
   if (av) { av.muzzle.getWorldPosition(_ra); av.flash = 1; } else _ra.set(a[0], a[1], a[2]);
   _rb.set(b[0], b[1], b[2]);
-  if (w !== 'blade' && w !== 'rocket' && w !== 'gl') { addTracer(_ra, _rb, w === 'sniper' ? 2.4 : 1); emit(_rb.x, _rb.y, _rb.z, NEON_C.r, NEON_C.g, NEON_C.b, 4, 3, 1); }
+  if (w !== 'blade' && w !== 'rocket' && w !== 'gl') { addTracer(_ra, _rb, w === 'sniper' ? 2.4 : 1); emit(_rb.x, _rb.y, _rb.z, 0.6, 0.55, 0.48, 4, 2.5, 1); }
   const dist = Math.hypot(_ra.x - P.x, _ra.z - P.z);
-  play({ pistol: 'pistol', rifle: 'shot', sniper: 'sniper', shotgun: 'shotgun', blade: 'swing', rocket: 'rocketFire', smg: 'smg', lmg: 'lmg', revolver: 'rev', gatling: 'gat', gl: 'gl' }[w] || 'shot', 0.55 / (1 + dist * 0.05), R(0.95, 1.05), 600 + 12000 / (1 + dist * 0.1));
+  play((WD[w] && WD[w].snd) || ({ blade: 'swing', rocket: 'rocketFire' })[w] || 'shot', 0.55 / (1 + dist * 0.05), R(0.95, 1.05), 600 + 12000 / (1 + dist * 0.1));
 }
 
 // --- teammate avatars ---
@@ -7397,7 +7407,7 @@ if (/[?&]dev\b/.test(location.search)) window.__as = { ev: s => eval(s) };
 let last = performance.now();
 let fpsFrames = 0, fpsTime = 0, lowFpsTime = 0;
 const fpsEl = $('fps');
-renderer.setAnimationLoop(now => {
+const mainLoop = now => {
   let dt = (now - last) / 1000; last = now;
   if (dt > 0.05) dt = 0.05; if (dt < 0) dt = 0;
   const realDt = dt;
@@ -7437,7 +7447,8 @@ renderer.setAnimationLoop(now => {
     if (lowFpsTime >= 2 && pixelRatio > 0.6) { pixelRatio = Math.max(0.6, pixelRatio - 0.2); renderer.setPixelRatio(pixelRatio); onResize(); lowFpsTime = 0; }
     fpsFrames = 0; fpsTime = 0;
   }
-});
+};
+renderer.setAnimationLoop(mainLoop); window.__mainLoop = mainLoop;
 })();
 </script>
 </body>
