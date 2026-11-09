@@ -2649,8 +2649,10 @@ function B(par, w, h, d, x, y, z, m, r, rx, ry, rz) {
 }
 function cylGeo(r0, r1, seg, open) { const key = 'cy' + r0 + '|' + r1 + '|' + seg + (open ? 'o' : ''); let g = _geoCache.get(key); if (!g) { g = new THREE.CylinderGeometry(r1, r0, 1, seg, 1, !!open); _geoCache.set(key, g); } return g; }
 // cylinder along an axis; r1 = radius at the far (+axis / forward for 'z' = toward -z) end
+const _dsMats = new Map();
+function dsMat(m) { let d = _dsMats.get(m); if (!d) { d = m.clone(); d.side = THREE.DoubleSide; _dsMats.set(m, d); } return d; }
 function C(par, r, len, x, y, z, m, axis, seg, r1, open) {
-  const o = new THREE.Mesh(cylGeo(r, r1 === undefined ? r : r1, seg || 16, open), m); o.scale.y = len;
+  const o = new THREE.Mesh(cylGeo(r, r1 === undefined ? r : r1, seg || 16, open), open ? dsMat(m) : m); o.scale.y = len;
   if (!axis || axis === 'z') o.rotation.x = -Math.PI / 2; else if (axis === 'x') o.rotation.z = -Math.PI / 2;
   o.position.set(x, y, z); par.add(o); return o;
 }
@@ -2752,7 +2754,7 @@ function handL(par, opts) {
   BG(h, 0.012, 0.036, 0.07, -0.043, -0.018, 0.008, GL3.knuckle, 0.004);
   for (let i = 0; i < 4; i++) { const z = -0.04 + i * 0.025; BG(h, 0.022, 0.02, 0.021, 0.042, -0.012, z, GL3.glove, 0.006); BG(h, 0.017, 0.034, 0.019, 0.05, 0.014, z, GL3.glove, 0.006); }
   BG(h, 0.02, 0.048, 0.06, -0.048, 0.008, 0.01, GL3.glove, 0.007); BG(h, 0.018, 0.02, 0.028, -0.046, 0.036, -0.016, GL3.glove, 0.006);
-  forearm(h, new THREE.Vector3(-0.022, -0.035, 0.035), ARM_L3, 0.62, true);
+  forearm(h, new THREE.Vector3(-0.022, -0.035, 0.035), o.arm || ARM_L3, 0.62, !o.arm);
   return h;
 }
 // spare magazine helper (hidden until a reload shows it)
@@ -5691,7 +5693,7 @@ function mdlThumper() {
   addFlash(W, 0, 0.05, -0.52);
   W.rh = handR(b); W.lh = handL(b); W.a.fore = [new THREE.Vector3(0, -0.078, -0.4), 0];
   W.a.port = new THREE.Vector3(0.05, -0.02, -0.1);
-  W.hip = new THREE.Vector3(0.16, -0.215, -0.32); W.adsDist = 0.15; W.len = 0.52;
+  W.hip = new THREE.Vector3(0.16, -0.215, -0.32); W.adsDist = 0.3; W.len = 0.52;
   return W;
 }
 // ---------- RL-7 rocket launcher (ultimate) ----------
@@ -5708,7 +5710,7 @@ function mdlRL7() {
   W.sight = new THREE.Vector3(0.05, 0.13, -0.12);
   addFlash(W, 0, 0.07, -0.84);
   W.rh = handR(b); W.lh = handL(b); W.a.fore = [new THREE.Vector3(0, -0.07, -0.28), 0];
-  W.hip = new THREE.Vector3(0.14, -0.22, -0.32); W.adsDist = 0.15; W.len = 0.84;
+  W.hip = new THREE.Vector3(0.14, -0.22, -0.32); W.adsDist = 0.2; W.len = 0.84;
   return W;
 }
 // ---------- P-17 pistol (polymer striker) ----------
@@ -5733,7 +5735,7 @@ function mdlP17() {
   { const g = new THREE.Group(); g.rotation.x = 0.26; magP.add(g); B(g, 0.022, 0.12, 0.03, 0, -0.06, -0.012, M3.park, 0.003); B(g, 0.03, 0.01, 0.038, 0, -0.118, -0.012, M3.blk, 0.003); }
   W.magRest = magP.position.clone(); W.magSpare = magP.clone(true); W.magSpare.visible = false; b.add(W.magSpare);
   addFlash(W, 0, 0.018, -0.17); addEject(W, 0.02, 0.025, -0.035);
-  W.rh = handR(b); W.lh = handL(b); W.a.fore = [new THREE.Vector3(-0.022, -0.075, 0.03), 0.9];       // support hand cupping the grip
+  W.rh = handR(b); W.lh = handL(b, { arm: new THREE.Vector3(0.4, -0.33, 0.45) }); W.a.fore = [new THREE.Vector3(-0.034, -0.05, 0.004), -1.5];       // support hand cupping the grip
   W.a.slide = new THREE.Vector3(-0.004, 0.02, 0.03);
   W.hip = new THREE.Vector3(0.13, -0.15, -0.31); W.adsDist = 0.3; W.len = 0.17; W.pistol = true;
   return W;
@@ -5760,7 +5762,7 @@ function mdlHC50() {
   { const g = new THREE.Group(); g.rotation.x = 0.26; magP.add(g); B(g, 0.025, 0.125, 0.036, 0, -0.062, -0.014, M3.steel, 0.003); B(g, 0.034, 0.01, 0.044, 0, -0.124, -0.014, M3.rub, 0.003); }
   W.magRest = magP.position.clone(); W.magSpare = magP.clone(true); W.magSpare.visible = false; b.add(W.magSpare);
   addFlash(W, 0, 0.022, -0.22); addEject(W, 0.02, 0.03, -0.04);
-  W.rh = handR(b); W.lh = handL(b); W.a.fore = [new THREE.Vector3(-0.024, -0.08, 0.03), 0.9];
+  W.rh = handR(b); W.lh = handL(b, { arm: new THREE.Vector3(0.4, -0.33, 0.45) }); W.a.fore = [new THREE.Vector3(-0.034, -0.05, 0.004), -1.5];
   W.a.slide = new THREE.Vector3(-0.004, 0.024, 0.03);
   W.hip = new THREE.Vector3(0.13, -0.155, -0.33); W.adsDist = 0.33; W.len = 0.22; W.pistol = true;
   return W;
@@ -5819,7 +5821,7 @@ function mdlMagnum() {
   C(sl, 0.024, 0.03, 0, 0, 0.02, M3.blk, 'z', 16); C(sl, 0.01, 0.02, 0, 0, 0.04, M3.knurl || M3.steel, 'z', 12);
   for (let i = 0; i < 6; i++) { const a = i * Math.PI / 3; C(sl, 0.0065, 0.04, Math.cos(a) * 0.02, Math.sin(a) * 0.02, -0.01, M3.brass, 'z', 10); }
   addFlash(W, 0, 0.026, -0.3);
-  W.rh = handR(b); W.lh = handL(b); W.a.fore = [new THREE.Vector3(-0.026, -0.08, 0.02), 0.9];
+  W.rh = handR(b); W.lh = handL(b, { arm: new THREE.Vector3(0.4, -0.33, 0.45) }); W.a.fore = [new THREE.Vector3(-0.034, -0.05, 0.004), -1.5];
   W.a.cyl = new THREE.Vector3(-0.07, 0.02, -0.02);
   W.hip = new THREE.Vector3(0.13, -0.15, -0.32); W.adsDist = 0.32; W.len = 0.3; W.pistol = true;
   return W;
