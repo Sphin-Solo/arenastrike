@@ -183,7 +183,7 @@
   #ebReset{background:#24304a;color:#e8eefc}
   #fps{position:absolute;right:12px;top:10px;font:12px ui-monospace,Menlo,Consolas,monospace;opacity:.6}
   #overlay{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(8,12,22,.72);backdrop-filter:blur(3px)}
-  #panel{width:min(440px,90vw);background:#141b2cee;border:1px solid #2b3956;border-radius:14px;padding:28px 30px;box-shadow:0 20px 60px #0008}
+  #panel{width:min(440px,90vw);background:#141b2cee;border:1px solid #2b3956;border-radius:14px;padding:24px 30px;max-height:94vh;overflow:auto;box-shadow:0 20px 60px #0008}
   h1{margin:0 0 4px;font-size:34px;letter-spacing:.1em}
   h1 span{color:#7fe3ff}
   #sumtxt{opacity:.8;margin:0 0 18px;font-size:14px}
@@ -297,6 +297,10 @@
   #vig{background:radial-gradient(ellipse at center,transparent 45%,rgba(140,0,0,.55) 100%) !important}
   body:not(.touch) #abar{left:50%;bottom:12px}
   body:not(.touch) #wname{display:none}
+  body:not(.touch) .sk{border-radius:3px;border-width:1px;font-family:Rajdhani,system-ui;background:linear-gradient(to top,rgba(6,10,12,.75) var(--cd,0%),rgba(40,46,44,.6) var(--cd,0%))}
+  body:not(.touch) .sk.ready{border-color:rgba(232,242,236,.85)}
+  body:not(.touch) .sk.ult{border-radius:3px}
+  #credits{font-family:Rajdhani,system-ui;font-size:12px;letter-spacing:.14em}
   body:not(.touch) #tQ{left:290px;bottom:14px;width:44px;height:44px}body:not(.touch) #tE{left:340px;bottom:14px;width:44px;height:44px}body:not(.touch) #tC{left:390px;bottom:14px;width:44px;height:44px}body:not(.touch) #tX{left:442px;bottom:10px;width:52px;height:52px}
   body.touch #radar{width:110px;height:110px;left:calc(10px + env(safe-area-inset-left));top:8px}body.touch #tl{left:calc(128px + env(safe-area-inset-left));font-size:12px}
   body.touch #br{bottom:auto;top:10px;right:calc(130px + env(safe-area-inset-right));transform:scale(.7);transform-origin:top right}
@@ -2478,7 +2482,7 @@ for (let i = 0; i < PN; i++) pPos[i * 3 + 1] = -999;
 const pGeo = new THREE.BufferGeometry();
 pGeo.setAttribute('position', new THREE.BufferAttribute(pPos, 3).setUsage(THREE.DynamicDrawUsage));
 pGeo.setAttribute('color', new THREE.BufferAttribute(pCol, 3).setUsage(THREE.DynamicDrawUsage));
-const particles = new THREE.Points(pGeo, new THREE.PointsMaterial({ size: 0.14, vertexColors: true, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending }));
+const particles = new THREE.Points(pGeo, new THREE.PointsMaterial({ size: 0.075, map: T.radial, vertexColors: true, transparent: true, opacity: 0.95, depthWrite: false }));
 particles.frustumCulled = false; scene.add(particles);
 let pHead = 0, pAlive = 0;
 function emit(x, y, z, r, g, b, n, speed, up) {
@@ -2566,7 +2570,7 @@ function updateTracers(dt) {
 // --- lighting for the viewmodel scene: neutral studio key/fill/rim, tinted per map ---
 gunRimC.color.setHex(0xcfd8e6); gunRimC.intensity = 0.25; gunRimM.color.setHex(0xffe2c0); gunRimM.intensity = 0.18;
 gunSun.intensity = 0.0;
-const vmKey = new THREE.DirectionalLight(0xfff1dd, 1.05); vmKey.position.set(1.2, 2.2, 0.8); gunScene.add(vmKey);
+const vmKey = new THREE.DirectionalLight(0xfff1dd, 0.85); vmKey.position.set(1.2, 2.2, 0.8); gunScene.add(vmKey);
 const vmFill = new THREE.DirectionalLight(0xbfd3ff, 0.32); vmFill.position.set(-2, 0.6, 0.6); gunScene.add(vmFill);
 const vmBack = new THREE.DirectionalLight(0xffffff, 0.45); vmBack.position.set(-0.5, 1.2, -2.5); gunScene.add(vmBack);
 const vmHemi = gunScene.children.find(o => o.isHemisphereLight); if (vmHemi) { vmHemi.color.setHex(0xd8e2f0); vmHemi.groundColor.setHex(0x2a2622); vmHemi.intensity = 0.45; }
@@ -2598,7 +2602,7 @@ const M3 = {
   blk: new THREE.MeshStandardMaterial({ color: 0x1c1d1f, roughness: 0.62, metalness: 0.15, map: VMT.polymer }),
   blk2: new THREE.MeshStandardMaterial({ color: 0x26282b, roughness: 0.55, metalness: 0.2, map: VMT.polymer }),
   park: new THREE.MeshStandardMaterial({ color: 0x2a2c2f, roughness: 0.42, metalness: 0.75, map: VMT.metal }),
-  alu: new THREE.MeshStandardMaterial({ color: 0x1b1c1f, roughness: 0.34, metalness: 0.6, map: VMT.metal }),
+  alu: new THREE.MeshStandardMaterial({ color: 0x1b1c1f, roughness: 0.34, metalness: 0.35, envMapIntensity: 0.22, map: VMT.metal }),
   steel: new THREE.MeshStandardMaterial({ color: 0x8d939b, roughness: 0.28, metalness: 1, map: VMT.metal }),
   blued: new THREE.MeshStandardMaterial({ color: 0x23272e, roughness: 0.22, metalness: 0.9, map: VMT.metal }),
   tan: new THREE.MeshStandardMaterial({ color: 0x7c6b4f, roughness: 0.72, metalness: 0.05, map: VMT.polymer }),
@@ -2622,7 +2626,7 @@ const M3 = {
 };
 // colours above are authored in sRGB; the renderer outputs sRGB, so convert them once
 for (const k in M3) { const m = M3[k]; if (m.color) m.color.convertSRGBToLinear(); if (m.isMeshStandardMaterial && m.envMapIntensity === 1) m.envMapIntensity = 0.35; }
-M3.alu.roughness = 0.5; M3.park.roughness = 0.46; M3.blk.roughness = 0.7;
+M3.alu.roughness = 0.62; M3.alu.metalness = 0.25; M3.park.roughness = 0.55; M3.park.metalness = 0.5; M3.blk.roughness = 0.7;
 for (const t of [VMT.camo, VMT.polymer, VMT.metal, VMT.fabric, T3.wood, T3.wrap, T3.blade]) t.encoding = THREE.sRGBEncoding;
 // --- modelling kit ---
 const _geoCache = new Map();
@@ -2780,10 +2784,10 @@ const eShared = {
 for (const k in eShared) { const m = eShared[k]; if (m.color && m.isMeshStandardMaterial) m.color.convertSRGBToLinear(); }
 fabricTex.encoding = THREE.sRGBEncoding;
 const EKIND = [
-  { name: 'RIFLEMAN', uni: 0x6b6450, gear: 0x4a4a3c, helm: 0x55553f, hp: 1, spd: 1, rate: 1.15, dmg: 0.7, sc: 1 },
-  { name: 'RUSHER', uni: 0x3c3f44, gear: 0x26282b, helm: 0x2c2e31, hp: 0.8, spd: 1.35, rate: 1.3, dmg: 0.45, sc: 0.97 },
-  { name: 'HEAVY', uni: 0x2b2c2e, gear: 0x1b1c1d, helm: 0x232425, hp: 2.3, spd: 0.72, rate: 1.5, dmg: 0.5, sc: 1.1 },
-  { name: 'MARKSMAN', uni: 0x4e5a3c, gear: 0x3c4630, helm: 0x47533a, hp: 0.9, spd: 0.9, rate: 1.9, dmg: 2.0, sc: 1 },
+  { name: 'RIFLEMAN', uni: 0x8a8064, gear: 0x5e5d4a, helm: 0x6a6a50, hp: 1, spd: 1, rate: 1.15, dmg: 0.7, sc: 1 },
+  { name: 'RUSHER', uni: 0x50555c, gear: 0x34373b, helm: 0x3a3d41, hp: 0.8, spd: 1.35, rate: 1.3, dmg: 0.45, sc: 0.97 },
+  { name: 'HEAVY', uni: 0x3a3b3e, gear: 0x232426, helm: 0x2c2d2f, hp: 2.3, spd: 0.72, rate: 1.5, dmg: 0.5, sc: 1.1 },
+  { name: 'MARKSMAN', uni: 0x66734e, gear: 0x4c583c, helm: 0x5a6646, hp: 0.9, spd: 0.9, rate: 1.9, dmg: 2.0, sc: 1 },
 ];
 const _la = new THREE.Vector3(), _lb = new THREE.Vector3(), _ly = new THREE.Vector3(0, 1, 0);
 function makeEnemy() {
@@ -4251,7 +4255,7 @@ function updateEnemies(dt) {
   for (let i = 0; i < enemies.length; i++) {
     const e = enemies[i]; if (!e.active) continue;
     const g = e.group, p = g.position;
-    if (e.flash > 0) { e.flash = Math.max(0, e.flash - dt * 8); for (const m of e.mats) m.emissiveIntensity = e.flash * 0.35; }
+    if (e.flash > 0) { e.flash = Math.max(0, e.flash - dt * 8); for (const m of e.mats) m.emissiveIntensity = e.flash * 0.1; }
     if (e.mflash > 0) { e.mflash = Math.max(0, e.mflash - dt * 14); e.flashMat.opacity = e.mflash; }
     e.kick = Math.max(0, e.kick - dt * 5); e.recoil = Math.max(0, e.recoil - dt * 8);
     if (e.spawnT > 0) { e.spawnT -= dt; if (e.spawnT > 0.25) continue; }
