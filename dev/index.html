@@ -2694,8 +2694,8 @@ function reticleTex(kind) {
 }
 const RET = { dot: reticleTex('dot'), holo: reticleTex('holo'), chev: reticleTex('chev') };
 function reticle(par, kind, size, x, y, z) {
-  const m = new THREE.MeshBasicMaterial({ map: RET[kind], transparent: true, depthWrite: false, depthTest: false, blending: THREE.AdditiveBlending });
-  const o = new THREE.Mesh(new THREE.PlaneGeometry(size, size), m); o.position.set(x, y, z); o.renderOrder = 5; par.add(o); return o;
+  const m = new THREE.MeshBasicMaterial({ map: RET[kind], transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, opacity: 0 });
+  const o = new THREE.Mesh(new THREE.PlaneGeometry(size, size), m); o.position.set(x, y, z); o.renderOrder = 5; o.userData.reticle = true; par.add(o); return o;
 }
 // --- gloves & sleeves (shared rig) ---
 const GL3 = { glove: new THREE.MeshStandardMaterial({ color: 0x4d463a, roughness: 0.82, metalness: 0.02, map: VMT.fabric, bumpMap: VMT.fabric, bumpScale: 0.0012 }),
@@ -2707,7 +2707,7 @@ const _ax = new THREE.Vector3(0, 1, 0);
 // glove pieces: same as B() but always near-capsule rounded so fingers read as fingers, not blocks
 function BG(par, w, h, d, x, y, z, m, r, rx, ry, rz) { const o = new THREE.Mesh(rbGeo(+w.toFixed(4), +h.toFixed(4), +d.toFixed(4), Math.min(w, h, d) * 0.47, 4), m); o.position.set(x, y, z); if (rx || ry || rz) o.rotation.set(rx || 0, ry || 0, rz || 0); par.add(o); return o; }
 const gloveTex = tex(128, 128, (g, w, hh) => { g.fillStyle = '#8a8a8a'; g.fillRect(0, 0, w, hh); const id = g.getImageData(0, 0, w, hh); for (let i = 0; i < id.data.length; i += 4) { const n = (Math.random() - 0.5) * 26; id.data[i] += n; id.data[i + 1] += n; id.data[i + 2] += n; } g.putImageData(id, 0, 0); g.strokeStyle = 'rgba(0,0,0,.25)'; g.lineWidth = 1; for (let y = 8; y < hh; y += 32) { g.beginPath(); g.moveTo(0, y); g.lineTo(w, y + 4); g.stroke(); } }, true);
-gloveTex.encoding = THREE.sRGBEncoding; GL3.glove.map = gloveTex; GL3.glove.bumpMap = gloveTex; GL3.glove.bumpScale = 0.0006; GL3.palm.map = gloveTex; GL3.glove.color.setHex(0x6a604e).convertSRGBToLinear(); GL3.palm.color.setHex(0x7a6a56).convertSRGBToLinear();
+gloveTex.encoding = THREE.sRGBEncoding; GL3.glove.map = gloveTex; GL3.glove.bumpMap = gloveTex; GL3.glove.bumpScale = 0.0006; GL3.palm.map = gloveTex; GL3.glove.color.setHex(0x8f8268).convertSRGBToLinear(); GL3.palm.color.setHex(0x9a8870).convertSRGBToLinear();
 function seg3(par, from, dir, len, r0, r1, m) { const d = dir.clone().normalize(); const c = new THREE.Mesh(cylGeo(r0, r1, 12), m); c.scale.y = len; c.quaternion.setFromUnitVectors(_ax, d); c.position.copy(from).addScaledVector(d, len / 2); par.add(c); return c; }
 function forearm(par, from, dir, len, watch) {
   const d = dir.clone().normalize(), p = k => from.clone().addScaledVector(d, k);
@@ -5649,27 +5649,27 @@ function mdlMK46() {
 // ---------- TEMPEST rotary cannon ----------
 function mdlTempest() {
   const W = newModel('tempest'), b = W.body;
-  B(b, 0.12, 0.13, 0.26, 0, 0.02, 0.0, M3.park, 0.012);
-  for (let i = 0; i < 8; i++) B(b, 0.124, 0.004, 0.012, 0, -0.03 + i * 0.012, 0.07, M3.blk2);
-  B(b, 0.13, 0.05, 0.08, 0, 0.11, -0.03, M3.od, 0.012);
+  B(b, 0.1, 0.12, 0.24, 0, 0.02, 0.0, M3.park, 0.014);
+  for (let i = 0; i < 8; i++) B(b, 0.104, 0.004, 0.012, 0, -0.03 + i * 0.012, 0.07, M3.blk2);
+  B(b, 0.08, 0.035, 0.07, 0, 0.095, -0.03, M3.od, 0.01);
   PR(b, [[0.004, 0.0], [-0.03, 0.0], [-0.058, -0.1], [-0.05, -0.112], [-0.02, -0.112], [0.008, -0.096], [0.016, -0.03]], 0.034, M3.blk, 0.005, null, 0);
   W.p.trigger = B(b, 0.006, 0.02, 0.006, 0, -0.015, -0.032, M3.steel, 0, 0.2);
   const bar = new THREE.Group(); bar.position.set(0, 0.02, -0.14); b.add(bar); W.p.barrels = bar;
-  for (let i = 0; i < 6; i++) { const a = i * Math.PI / 3; C(bar, 0.0105, 0.6, Math.cos(a) * 0.036, Math.sin(a) * 0.036, -0.3, M3.heat, 'z', 10); }
-  for (const z of [-0.05, -0.32, -0.56]) { const c = C(bar, 0.055, 0.022, 0, 0, z, M3.park, 'z', 6); }
+  for (let i = 0; i < 6; i++) { const a = i * Math.PI / 3; C(bar, 0.012, 0.62, Math.cos(a) * 0.042, Math.sin(a) * 0.042, -0.31, M3.heat, 'z', 10); }
+  for (const z of [-0.05, -0.32, -0.58]) { const c = C(bar, 0.062, 0.024, 0, 0, z, M3.park, 'z', 6); }
   C(bar, 0.014, 0.6, 0, 0, -0.3, M3.steel, 'z', 8);
   C(b, 0.066, 0.06, 0, 0.02, -0.15, M3.park, 'z', 20);
   B(b, 0.03, 0.08, 0.034, 0, -0.07, -0.2, M3.rub, 0.008);                                                                                     // front grip
   B(b, 0.018, 0.08, 0.018, 0, 0.12, -0.12, M3.park); B(b, 0.018, 0.08, 0.018, 0, 0.12, 0.08, M3.park); C(b, 0.016, 0.22, 0, 0.165, -0.02, M3.rub, 'z', 10);
   const magP = new THREE.Group(); magP.position.set(0, -0.08, -0.03); b.add(magP); W.mag = magP;
-  { const g = new THREE.Group(); magP.add(g); B(g, 0.15, 0.13, 0.2, -0.02, -0.07, 0, M3.od, 0.012); B(g, 0.152, 0.02, 0.202, -0.02, -0.005, 0, M3.park, 0.006); }
+  { const g = new THREE.Group(); magP.add(g); B(g, 0.12, 0.11, 0.17, -0.02, -0.06, 0, M3.od, 0.012); B(g, 0.122, 0.018, 0.172, -0.02, -0.005, 0, M3.park, 0.006); }
   W.magRest = magP.position.clone(); W.magSpare = magP.clone(true); W.magSpare.visible = false; b.add(W.magSpare);
   W.p.chute = []; for (let i = 0; i < 5; i++) W.p.chute.push(B(b, 0.04, 0.03, 0.03, 0.06 + i * 0.005, -0.05 + i * 0.022, -0.09 - i * 0.01, M3.steel, 0.006));
   marking(b, ['TEMPEST M134-X', '7.62 ROTARY'], 0.08, 0.016, -0.061, 0.03, 0.05, -Math.PI / 2);
   W.sight = new THREE.Vector3(0, 0.19, -0.05);
   addFlash(W, 0, 0.02, -0.75); addEject(W, 0.07, -0.02, -0.08);
   W.rh = handR(b); W.lh = handL(b); W.a.fore = [new THREE.Vector3(0, -0.11, -0.2), 0];
-  W.hip = new THREE.Vector3(0.18, -0.235, -0.38); W.adsDist = 0.3; W.len = 0.75; W.noAds = true;
+  W.hip = new THREE.Vector3(0.21, -0.27, -0.44); W.adsDist = 0.3; W.len = 0.75; W.noAds = true; W.hipRot = new THREE.Vector3(0.02, 0.07, 0.05);
   return W;
 }
 // ---------- THUMPER six-shot grenade launcher ----------
@@ -5771,7 +5771,7 @@ function mdlHC50() {
 function mdlAP9() {
   const W = newModel('ap9'), b = W.body;
   mdlP17Base(W, M3.blk, M3.park, 0.17);
-  B(b, 0.024, 0.06, 0.026, 0, -0.045, -0.135, M3.blk, 0.006, 0.2);                                                                           // front grip
+  B(b, 0.026, 0.012, 0.04, 0, -0.012, -0.14, M3.blk, 0.004);                                                                                  // folded front grip
   C(b, 0.012, 0.05, 0, 0.018, -0.2, M3.blk2, 'z', 12); for (let i = 0; i < 4; i++) B(b, 0.026, 0.003, 0.004, 0, 0.018, -0.185 - i * 0.01, M3.blk);
   B(b, 0.006, 0.008, 0.012, -0.016, -0.0, -0.005, M3.red, 0.002);                                                                             // auto selector
   return W;
@@ -5793,7 +5793,7 @@ function mdlP17Base(W, mf, ms, len) {     // shared machine-pistol body (longer 
   { const g = new THREE.Group(); g.rotation.x = 0.26; magP.add(g); B(g, 0.022, 0.19, 0.03, 0, -0.095, -0.012, ms, 0.003); B(g, 0.03, 0.01, 0.038, 0, -0.19, -0.012, mf, 0.003); }
   W.magRest = magP.position.clone(); W.magSpare = magP.clone(true); W.magSpare.visible = false; b.add(W.magSpare);
   addFlash(W, 0, 0.018, -len - 0.07); addEject(W, 0.02, 0.025, -0.035);
-  W.rh = handR(b); W.lh = handL(b); W.a.fore = [new THREE.Vector3(0, -0.06, -0.135), 0];
+  W.rh = handR(b); W.lh = handL(b, { arm: new THREE.Vector3(0.4, -0.33, 0.45) }); W.a.fore = [new THREE.Vector3(-0.034, -0.05, 0.004), -1.5];
   W.a.slide = new THREE.Vector3(-0.004, 0.02, 0.03);
   W.hip = new THREE.Vector3(0.135, -0.16, -0.31); W.adsDist = 0.3; W.len = len; W.pistol = true;
   return W;
@@ -6121,8 +6121,8 @@ for (const id in WD) {
   const W = WD[id].mdl(); W.wid = id; VMM[id] = W;
   if (!W.sight) W.sight = new THREE.Vector3(0, 0.1, 0); if (!W.adsDist) W.adsDist = 0.2;
   if (WD[id].melee) { W.hip.set(SW_IDLE[0], SW_IDLE[1], SW_IDLE[2]); }
-  if (W.pistol) { W.hip.add(new THREE.Vector3(-0.012, 0.012, -0.05)); W.hipRot = new THREE.Vector3(0.04, 0.2, 0.08); W.adsDist = Math.max(W.adsDist, 0.42); } else if (!WD[id].melee) W.hip.add(new THREE.Vector3(-0.02, 0.028, -0.07));
-  W.root.traverse(o => { if (o.isMesh) { o.frustumCulled = false; } });
+  if (W.pistol) { W.hip.add(new THREE.Vector3(-0.012, 0.012, -0.05)); W.hipRot = new THREE.Vector3(0.04, 0.2, 0.08); W.adsDist = Math.max(W.adsDist, 0.42); } else if (!WD[id].melee && id !== 'gatling') W.hip.add(new THREE.Vector3(-0.02, 0.028, -0.07));
+  W.ret = []; W.root.traverse(o => { if (o.isMesh) { o.frustumCulled = false; if (o.userData.reticle) W.ret.push(o.material); } });
   W.adsPos = new THREE.Vector3(-W.sight.x, -W.sight.y, -W.adsDist - W.sight.z);
   const parts = Object.assign({}, W.p, { mag: W.mag, spare: W.magSpare });
   for (const k in parts) { const o = parts[k]; if (o && o.isObject3D) o.userData.rest = { p: o.position.clone(), r: o.rotation.clone() }; }
@@ -6551,6 +6551,7 @@ function poseVM(dt, sprint) {
   // scopes: hide viewmodel when fully scoped (overlay draws the reticle)
   const scoped = W.scoped && aimT > 0.85 && !vm.clip;
   W.root.visible = !down && !scoped; if (W.arm) W.arm.visible = W.root.visible;
+  { const ro = Math.max(0, Math.min(1, (aimT - 0.35) / 0.5)); for (const m of W.ret) m.opacity = ro; }
   { const so = W.scoped ? Math.max(0, Math.min(1, (aimT - 0.75) / 0.25)) * (vm.clip ? 0 : 1) : 0; if (scopeEl._o !== so) { scopeEl._o = so; scopeEl.style.opacity = so; } }
   // flash fade
   mfCoreMat.opacity = Math.max(0, mfCoreMat.opacity - dt * 26); mfPetalMat.opacity = Math.max(0, mfPetalMat.opacity - dt * 30); mfFwdMat.opacity = Math.max(0, mfFwdMat.opacity - dt * 32);
