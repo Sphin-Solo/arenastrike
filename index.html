@@ -2736,7 +2736,8 @@ function handR(par, opts) {
   B(tf, 0.017, 0.017, 0.042, 0, 0, -0.02, GL3.glove, 0.006); const tip = B(tf, 0.016, 0.016, 0.026, -0.008, -0.01, -0.048, GL3.glove, 0.006); tip.rotation.x = 0.55;
   B(h, 0.019, 0.022, 0.058, -0.03, gy + 0.05, gz - 0.006, GL3.glove, 0.007, -0.15);              // thumb
   B(h, 0.017, 0.018, 0.026, -0.029, gy + 0.058, gz - 0.046, GL3.glove, 0.006, -0.3);
-  forearm(h, new THREE.Vector3(0.012, gy - 0.03, gz + 0.035), ARM_R3, 0.6, false);
+  const wr = new THREE.Object3D(); wr.position.set(0.012, gy - 0.03, gz + 0.035); h.add(wr); h.userData.wrist = wr;
+  if (!o.noArm) forearm(h, new THREE.Vector3(0.012, gy - 0.03, gz + 0.035), ARM_R3, 0.6, false);
   return h;
 }
 // left hand: palm up under a handguard whose underside is at the group origin
@@ -5834,7 +5835,10 @@ function mdlSword() {
   B(sw, 0.0035, L * 0.9, 0.004, 0, 0.05 + L * 0.45, 0.009, M3.steel);              // fuller line
   W.p.tip = new THREE.Object3D(); W.p.tip.position.set(0, 0.05 + L + 0.03, 0.04); sw.add(W.p.tip);
   W.p.base = new THREE.Object3D(); W.p.base.position.set(0, 0.12, 0.0); sw.add(W.p.base);
-  W.rh = handR(b); W.lh = handL(b); W.lh.visible = false; W.a.fore = [new THREE.Vector3(-0.08, -0.3, 0.25), 0];
+  W.rh = handR(b, { noArm: true }); W.lh = handL(b); W.lh.visible = false; W.a.fore = [new THREE.Vector3(-0.08, -0.3, 0.25), 0];
+  // forearm is solved every frame from the wrist to an elbow below the screen edge, so the wrist can turn freely
+  W.arm = new THREE.Group(); W.arm.visible = false; gunScene.add(W.arm); forearm(W.arm, new THREE.Vector3(0, 0, 0), new THREE.Vector3(0, 1, 0), 0.62, false);
+  W.arm.traverse(o => { if (o.isMesh) o.frustumCulled = false; });
   W.hip = new THREE.Vector3(0.21, -0.25, -0.38); W.adsDist = 0.3; W.len = 0.3; W.melee = true;
   return W;
 }
@@ -6012,13 +6016,18 @@ function clipBox(W) {           // rotary cannon ammo box swap
     vis: { mag: [[1.1, 0], [1.81, 1]], spare: [[1.3, 1], [1.81, 0]] } };
 }
 function clipInspect(W) {
-  if (W.melee) return { d: 2.4, tr: { root: [[0, 0, 0, 0, 0, 0, 0], [0.35, -0.08, 0.06, 0.05, 0.4, -0.2, -0.9], [0.9, -0.1, 0.07, 0.05, 0.3, -0.2, -2.6], [1.4, -0.1, 0.07, 0.05, 0.25, -0.1, -4.4], [1.8, -0.06, 0.04, 0.03, 0.2, -0.1, -6.0], [2.3, 0, 0, 0, 0, 0, -6.2832]] }, ev: [[0.3, 'inspect']], vis: {} };
+  if (W.melee) return { d: 2.3, tr: {}, ev: [[0.3, 'inspect']], vis: {}, sw: [[0, ...SW_IDLE],
+    [0.42, 0.06, -0.13, -0.42, -0.95, 0.15, -0.25, 0, 1, 0.1, 'io'], [1.0, 0.04, -0.11, -0.41, -0.95, 0.22, -0.2, 0, 0.9, 0.4, 'io'],
+    [1.28, 0.05, -0.12, -0.42, -0.93, 0.25, -0.25, 0, 0.15, 1, 'io'], [1.6, 0.06, -0.13, -0.42, -0.95, 0.18, -0.25, 0, -1, 0.2, 'io'],
+    [2.3, ...SW_IDLE, 'io']] };
   if (W.pistol) return { d: 2.2, tr: { root: [[0, 0, 0, 0, 0, 0, 0], [0.4, -0.05, 0.04, 0.03, 0.15, 0.9, 0.5], [1.0, -0.05, 0.04, 0.03, 0.15, 0.9, 0.55], [1.4, -0.02, 0.04, 0.04, 0.3, -0.5, -0.8], [1.85, -0.02, 0.04, 0.04, 0.3, -0.5, -0.8], [2.15, 0, 0, 0, 0, 0, 0]], lh: [[0, 'fore'], [0.3, 'fore', -0.05, -0.12, 0.06], [1.9, 'fore', -0.05, -0.12, 0.06], [2.15, 'fore']] }, ev: [[0.25, 'inspect'], [1.35, 'equip']], vis: {} };
   return { d: 2.8, tr: {
     root: [[0, 0, 0, 0, 0, 0, 0], [0.45, -0.1, 0.05, 0.06, 0.12, 0.85, 0.42], [1.2, -0.1, 0.05, 0.06, 0.14, 0.88, 0.45], [1.6, -0.03, 0.07, 0.03, 0.25, -0.3, -0.75], [2.3, -0.03, 0.07, 0.03, 0.27, -0.32, -0.78], [2.75, 0, 0, 0, 0, 0, 0]],
     lh: [[0, 'fore'], [0.45, 'fore'], [1.25, 'fore'], [1.4, 'mag', 0.0, 0.02, 0.0], [2.2, 'mag', 0, 0.02, 0], [2.6, 'fore']] }, ev: [[0.3, 'inspect'], [1.45, 'cellOut']], vis: {} };
 }
 function clipDraw(W, first) {
+  if (W.melee) return { d: 0.5, tr: {}, ev: [[0.02, 'equip'], [0.16, 'swing']], vis: {}, sw: [[0, 0.32, -0.5, -0.32, 0.3, 0.35, 0.88, -0.6, 0.3, 0.2],
+    [0.22, 0.16, -0.12, -0.44, -0.62, 0.7, -0.35, -0.7, -0.5, -0.4, 'o'], [0.5, ...SW_IDLE, 'io']] };
   const tr = { root: [[0, 0.06, -0.3, 0.08, -1.0, 0.4, 0.7], [first ? 0.32 : 0.28, 0.0, -0.012, 0.0, 0.06, 0.0, -0.06, 'o'], [first ? 0.42 : 0.4, 0, 0, 0, 0, 0, 0]], lh: [[0, 'fore', -0.05, -0.2, 0.1], [0.3, 'fore']] }, ev = [[0.02, 'equip']];
   if (first && W.p.ch && !W.pistol) {
     tr.lh = [[0, 'fore', -0.05, -0.2, 0.1], [0.32, 'fore'], [0.5, 'ch', 0, 0.01, -0.01, 0, 0, -0.3], [0.62, 'ch', 0, 0.01, 0.085, 0, 0, -0.3, 'o'], [0.66, 'ch', 0, 0.02, 0.085, 0, 0, -0.3], [0.95, 'fore']];
@@ -6036,15 +6045,37 @@ function clipDraw(W, first) {
   }
   return { d: first ? 0.45 : 0.42, tr, ev, vis: {} };
 }
-function clipSwing(W, kind) {
-  const C3 = {
-    R: [[0, 0, 0, 0, 0, 0, 0], [0.1, 0.1, 0.12, 0.06, 0.35, -0.7, -1.1, 'o'], [0.24, -0.3, -0.06, -0.12, -0.55, 0.9, 1.25, 'i'], [0.32, -0.32, -0.08, -0.12, -0.6, 0.95, 1.3], [0.56, 0, 0, 0, 0, 0, 0]],
-    L: [[0, 0, 0, 0, 0, 0, 0], [0.1, -0.22, 0.12, 0.04, 0.35, 0.8, 1.2, 'o'], [0.24, 0.16, -0.06, -0.1, -0.55, -0.8, -1.25, 'i'], [0.32, 0.17, -0.08, -0.1, -0.6, -0.85, -1.3], [0.56, 0, 0, 0, 0, 0, 0]],
-    O: [[0, 0, 0, 0, 0, 0, 0], [0.14, -0.06, 0.22, 0.08, 1.0, 0.1, -0.3, 'o'], [0.28, -0.08, -0.12, -0.12, -0.9, 0.1, -0.2, 'i'], [0.36, -0.08, -0.14, -0.12, -0.95, 0.1, -0.2], [0.62, 0, 0, 0, 0, 0, 0]],
-    Q: [[0, 0, 0, 0, 0, 0, 0], [0.08, 0.02, 0.06, 0.12, 0.6, -0.2, -0.3, 'o'], [0.18, -0.1, -0.02, -0.28, -0.45, 0.2, 0.3, 'i'], [0.26, -0.1, -0.02, -0.3, -0.5, 0.2, 0.35], [0.5, 0, 0, 0, 0, 0, 0]],
-  };
-  const hitT = { R: 0.2, L: 0.2, O: 0.25, Q: 0.16 }[kind];
-  return { d: C3[kind][C3[kind].length - 1][0], tr: { root: C3[kind] }, ev: [[0.05, 'swing'], [hitT, 'meleeHit']], vis: {}, trail: [0.1, hitT + 0.1] };
+// katana: keys are [t, hand x,y,z (camera space), blade dir x,y,z, edge dir x,y,z, ease]
+const SW_IDLE = [0.22, -0.22, -0.42, -0.22, 0.68, -0.7, -0.85, -0.2, -0.3];
+const SWING = {
+  R: [[0.12, 0.2, -0.03, -0.42, -0.5, 0.85, 0.15, -0.7, -0.3, -0.6, 'o'], [0.15, 0.21, -0.01, -0.41, -0.52, 0.85, 0.12, -0.7, -0.3, -0.6, 'i'],
+      [0.205, 0.02, -0.1, -0.5, -0.8, 0.3, -0.5, -0.3, -0.9, 0.2, 'l'], [0.25, -0.06, -0.17, -0.48, -0.85, -0.28, -0.45, -0.25, -0.9, 0.1, 'o'],
+      [0.36, -0.09, -0.2, -0.46, -0.82, -0.33, -0.45, -0.25, -0.9, 0.1], [0.62, ...SW_IDLE, 'io']],
+  L: [[0.13, -0.06, -0.17, -0.46, -0.85, -0.2, -0.45, 0.3, 0.9, 0, 'o'], [0.16, -0.08, -0.18, -0.45, -0.85, -0.25, -0.45, 0.3, 0.9, 0, 'i'],
+      [0.215, 0.06, -0.1, -0.5, 0.6, 0.35, -0.7, 0.6, 0.8, 0, 'l'], [0.26, 0.2, -0.02, -0.44, 0.45, 0.85, 0.2, 0.7, 0.3, -0.6, 'o'],
+      [0.37, 0.21, 0, -0.43, 0.42, 0.88, 0.22, 0.7, 0.3, -0.6], [0.64, ...SW_IDLE, 'io']],
+  O: [[0.15, 0.12, 0.0, -0.42, -0.2, 0.85, 0.45, 0, 0.5, -0.85, 'o'], [0.18, 0.12, 0.02, -0.41, -0.2, 0.83, 0.5, 0, 0.5, -0.85, 'i'],
+      [0.24, 0.06, -0.07, -0.5, -0.25, 0.25, -0.93, 0, -1, -0.2, 'l'], [0.29, 0.06, -0.14, -0.48, -0.45, -0.45, -0.77, 0, -0.9, 0.4, 'o'],
+      [0.4, 0.05, -0.16, -0.47, -0.45, -0.5, -0.74, 0, -0.9, 0.4], [0.7, ...SW_IDLE, 'io']],
+  Q: [[0.06, 0.2, -0.03, -0.42, -0.5, 0.85, 0.15, -0.7, -0.3, -0.6, 'o'], [0.08, 0.21, -0.01, -0.41, -0.52, 0.85, 0.12, -0.7, -0.3, -0.6, 'i'],
+      [0.125, 0.02, -0.1, -0.5, -0.8, 0.3, -0.5, -0.3, -0.9, 0.2, 'l'], [0.165, -0.06, -0.17, -0.48, -0.85, -0.28, -0.45, -0.25, -0.9, 0.1, 'o'],
+      [0.24, -0.09, -0.2, -0.46, -0.82, -0.33, -0.45, -0.25, -0.9, 0.1], [0.46, ...SW_IDLE, 'io']],
+};
+function clipSwing(W, kind) {   // anticipation -> fast arc through the centre (edge leading) -> follow-through -> recover
+  const keys = [[0, ...SW_IDLE]].concat(SWING[kind]);
+  const hold = keys[2][0], mid = keys[3][0], end = keys[4][0];
+  return { d: keys[keys.length - 1][0], tr: {}, sw: keys, ev: [[hold - 0.02, 'swing'], [mid - 0.015, 'cut' + kind], [mid, 'meleeHit']], vis: {}, trail: [hold, end + 0.04], kind };
+}
+const _swA = new THREE.Vector3(), _swB = new THREE.Vector3(), _swE = new THREE.Vector3(), _swE2 = new THREE.Vector3();
+function evalSword(keys, t, pos, dir, edge) {
+  let i = 0; while (i < keys.length - 2 && t > keys[i + 1][0]) i++;
+  const a = keys[i], b = keys[i + 1] || a, span = b[0] - a[0], u = span > 0 ? Math.max(0, Math.min(1, (t - a[0]) / span)) : 1;
+  const e = b[10], k = e === 'o' ? easeO(u) : e === 'i' ? easeI(u) : e === 'l' ? u : easeIO(u);
+  pos.set(a[1] + (b[1] - a[1]) * k, a[2] + (b[2] - a[2]) * k, a[3] + (b[3] - a[3]) * k);
+  _swA.set(a[4], a[5], a[6]).normalize(); _swB.set(b[4], b[5], b[6]).normalize(); dir.copy(_swA).lerp(_swB, k);
+  if (dir.lengthSq() < 1e-4) dir.copy(_swB); dir.normalize();
+  _swE.set(a[7], a[8], a[9]).normalize(); _swE2.set(b[7], b[8], b[9]).normalize(); edge.copy(_swE).lerp(_swE2, k);
+  if (edge.lengthSq() < 1e-4) edge.copy(_swE2);
 }
 
 
@@ -6077,7 +6108,7 @@ const VMM = {};
 for (const id in WD) {
   const W = WD[id].mdl(); W.wid = id; VMM[id] = W;
   if (!W.sight) W.sight = new THREE.Vector3(0, 0.1, 0); if (!W.adsDist) W.adsDist = 0.2;
-  if (WD[id].melee) { W.body.rotation.set(-0.85, 0.1, 0.22); W.hip.set(0.22, -0.2, -0.42); }
+  if (WD[id].melee) { W.hip.set(SW_IDLE[0], SW_IDLE[1], SW_IDLE[2]); }
   if (W.pistol) W.hip.add(new THREE.Vector3(-0.015, 0.03, -0.045)); else if (!WD[id].melee) W.hip.add(new THREE.Vector3(-0.02, 0.028, -0.07));
   W.root.traverse(o => { if (o.isMesh) { o.frustumCulled = false; } });
   W.adsPos = new THREE.Vector3(-W.sight.x, -W.sight.y, -W.adsDist - W.sight.z);
@@ -6120,12 +6151,13 @@ function ejectCase(W, kind) {
 }
 function updateCases(dt) { for (const c of casing3) { if (c.life <= 0) continue; c.life -= dt; c.v.y -= 7 * dt; c.m.position.addScaledVector(c.v, dt); c.m.rotation.x += c.av.x * dt; c.m.rotation.y += c.av.y * dt; c.m.rotation.z += c.av.z * dt; if (c.life <= 0) c.m.visible = false; } }
 // sword trail
+const _aw = new THREE.Vector3(), _ad = new THREE.Vector3(), ELBOW3 = new THREE.Vector3(0.36, -0.52, 0.02);
 function updateTrail3(dt, W, active) {
-  trailLife = active ? 1 : Math.max(0, trailLife - dt * 7);
+  trailLife = active ? 1 : Math.max(0, trailLife - dt * 9);
   for (let i = TRAIL_N - 1; i > 0; i--) for (let k = 0; k < 6; k++) trailPos[i * 6 + k] = trailPos[(i - 1) * 6 + k];
-  if (W && W.p.tip) { W.root.updateMatrixWorld(true); W.p.base.getWorldPosition(_tb); W.p.tip.getWorldPosition(_tt); trailPos[0] = _tb.x; trailPos[1] = _tb.y; trailPos[2] = _tb.z; trailPos[3] = _tt.x; trailPos[4] = _tt.y; trailPos[5] = _tt.z; }
-  for (let i = 0; i < TRAIL_N; i++) { const a = trailLife * Math.pow(1 - i / TRAIL_N, 1.5) * 0.5; trailAlpha[i * 2] = a * 0.15; trailAlpha[i * 2 + 1] = a; }
-  trailMat.uniforms.color.value.setHex(0xd8e6ff);
+  if (W && W.p.tip) { W.root.updateMatrixWorld(true); W.p.base.getWorldPosition(_tb); W.p.tip.getWorldPosition(_tt); _tb.lerp(_tt, 0.6); trailPos[0] = _tb.x; trailPos[1] = _tb.y; trailPos[2] = _tb.z; trailPos[3] = _tt.x; trailPos[4] = _tt.y; trailPos[5] = _tt.z; }
+  for (let i = 0; i < TRAIL_N; i++) { const a = trailLife * Math.pow(1 - i / TRAIL_N, 1.8) * 0.55; trailAlpha[i * 2] = 0; trailAlpha[i * 2 + 1] = a; }
+  trailMat.uniforms.color.value.setHex(0xcfdcf0);
   trailGeo.attributes.position.needsUpdate = true; trailGeo.attributes.alpha.needsUpdate = true;
   trail.visible = trailLife > 0.01;
 }
@@ -6141,7 +6173,7 @@ const ammoStore = new Proxy({}, { get: (o, k) => (k === 'rocket' ? (inv.rocket ?
 const vm = { W: null, clip: null, cname: '', t: 0, rate: 1, evI: 0, onEnd: null, sw: null, slideT: 0, chT: 0, carT: 0, trigT: 0, cylA: 0, cylTarget: 0, drumA: 0, drumTarget: 0, spin: 0, spinWas: 0, heat: 0, beltPh: 0, slideLock: false, swingSide: 1, quick: null, shotIdx: 0, sinceShot: 9, bloom: 0, recP: 0, recY: 0 };
 const _ofs = [0, 0, 0, 0, 0, 0], _hp = new THREE.Vector3(), _hr = new THREE.Euler();
 function showModel(id) {
-  for (const k in VMM) VMM[k].root.visible = false;
+  for (const k in VMM) VMM[k].root.visible = false; if (VMM.blade && VMM.blade.arm) VMM.blade.arm.visible = false;
   const W = VMM[id]; vm.W = W; W.root.visible = true;
   if (W.muzzle) { W.muzzle.add(mf3); mf3.position.set(0, 0, 0); }
   W.mag && (W.mag.visible = true); W.magSpare && (W.magSpare.visible = false);
@@ -6162,7 +6194,11 @@ function clipEvent(a) {
     case 'slide': vm.slideLock = false; vm.slideT = 0; play('slide', 0.9); break;
     case 'eject': ejectCase(W, w.pellets ? 'shell' : w.bolt ? 'big' : 'case'); break;
     case 'ejectAll': for (let i = 0; i < 6; i++) setTimeout(() => ejectCase(W, 'case'), i * 25); break;
-    case 'swing': play('swing', 0.9, R(0.92, 1.08)); break;
+    case 'swing': { play(vm.clip && vm.clip.kind === 'L' ? 'swingL' : 'swing', 0.9, R(0.92, 1.08)); const k = vm.clip && vm.clip.kind;
+      if (k === 'L') { sp.roll.v -= 0.9; sp.ry.v -= 0.6; } else if (k === 'O') { sp.rx.v -= 1.2; sp.land.v -= 0.12; } else { sp.roll.v += 0.9; sp.ry.v += 0.6; } break; }
+    case 'cutR': case 'cutQ': sp.roll.v -= 2.2; sp.ry.v += 1.0; shake = Math.min(1, shake + 0.04); break;
+    case 'cutL': sp.roll.v += 2.2; sp.ry.v -= 1.0; shake = Math.min(1, shake + 0.04); break;
+    case 'cutO': sp.land.v -= 0.4; sp.rx.v -= 1.4; shake = Math.min(1, shake + 0.05); break;
     case 'meleeHit': meleeHit(); break;
     case 'pumpBack': play('pump', 0.85, 1.05); break; case 'pumpFwd': break;
     case 'boltOpen': play('boltOpen', 0.9); break; case 'boltClose': play('boltClose', 0.9); break;
@@ -6387,24 +6423,40 @@ function updateDrops(dt) {
   }
 }
 function scavenge(frac) { for (const s of ['primary', 'secondary']) { const id = loadout[s]; if (!id || !inv[id]) continue; const w = WD[id]; inv[id].res = Math.min(w.res, inv[id].res + Math.ceil(w.res * frac)); } }
+// ---- katana: hand + blade direction from keys, forearm solved to an off-screen elbow ----
+const _swP = new THREE.Vector3(), _swD = new THREE.Vector3(), _swEd = new THREE.Vector3(), _swX = new THREE.Vector3(), _swM = new THREE.Matrix4(), _swQ = new THREE.Quaternion(), _swQ2 = new THREE.Quaternion(), _swEu = new THREE.Euler(), _wr = new THREE.Vector3(), _elb = new THREE.Vector3(), _up3 = new THREE.Vector3(0, 1, 0);
+function swordPose(W, dx, dy, dz, rx, ry, rz) {
+  const c = vm.clip && vm.clip.sw ? vm.clip : null;
+  if (c) evalSword(c.sw, vm.t, _swP, _swD, _swEd); else { _swP.set(SW_IDLE[0], SW_IDLE[1], SW_IDLE[2]); _swD.set(SW_IDLE[3], SW_IDLE[4], SW_IDLE[5]).normalize(); _swEd.set(SW_IDLE[6], SW_IDLE[7], SW_IDLE[8]); }
+  _swEd.addScaledVector(_swD, -_swEd.dot(_swD)).normalize(); _swX.crossVectors(_swD, _swEd);
+  _swM.makeBasis(_swX, _swD, _swEd); _swQ.setFromRotationMatrix(_swM);
+  _swQ2.setFromEuler(_swEu.set(rx, ry, rz)); W.body.rotation.set(0, 0, 0);
+  W.root.quaternion.copy(_swQ2).multiply(_swQ);
+  W.root.position.set(_swP.x + dx, _swP.y + dy, _swP.z + dz);
+  W.root.updateMatrixWorld(true);
+  W.rh.userData.wrist.getWorldPosition(_wr);
+  _elb.set(0.36 + (_wr.x - 0.2) * 0.35, -0.62 + (_wr.y + 0.2) * 0.3, 0.02 + (_wr.z + 0.4) * 0.3);
+  W.arm.position.copy(_wr); _swD.subVectors(_elb, _wr).normalize(); W.arm.quaternion.setFromUnitVectors(_up3, _swD);
+}
 // ---- per-frame viewmodel pose ----
 const scopeEl = $('scope');
 const _rootP = new THREE.Vector3(), _rootR = new THREE.Euler(), _hipP = new THREE.Vector3();
 let wasAiming3 = false, movRoll3 = 0, movLean3 = 0, airY3 = 0, swX = 0, swY = 0, idle3 = 0, settle3 = 0;
 for (const id in VMM) { const W = VMM[id]; if (W.magSpare) W.magSpare.userData.rest = { p: W.magRest.clone(), r: new THREE.Euler() }; if (W.mag) W.mag.userData.rest = { p: W.magRest.clone(), r: W.mag.rotation.clone() }; }
 function poseVM(dt, sprint) {
-  const W = vm.W; if (!W) return;
-  const w = WD[cur], c = vm.clip, t = vm.t;
-  // switching: holster the old weapon, then bring the new one up
+  if (!vm.W) return;
+  // switching: holster the old weapon, then bring the new one up (may swap vm.W / cur, so read them afterwards)
   let hol = 0;
   if (vm.sw) { vm.sw.t += dt; hol = vm.sw.hol > 0 ? Math.min(1, vm.sw.t / vm.sw.hol) : 1; if (hol >= 1) { finishSwitch(); hol = 0; } }
   else evalClip(dt);
+  const W = vm.W, w = WD[cur];
+  for (const k in VMM) if (VMM[k] !== W && VMM[k].root.visible) VMM[k].root.visible = false;
+  if (W !== VMM.blade && VMM.blade.arm) VMM.blade.arm.visible = false;
   const am = 1 - aimT * 0.9;
   // base: hip -> ADS
   const adsK = W.noAds || w.melee ? 0 : easeIO(Math.min(1, aimT));
   _hipP.copy(W.hip).lerp(W.adsPos, adsK);
   let px = _hipP.x, py = _hipP.y, pz = _hipP.z, rx = 0, ry = 0, rz = 0;
-  if (w.melee) { rx = -0.05; ry = 0.05; }
   // clip root
   if (vm.clip && vm.clip.tr.root) { evalVec(vm.clip.tr.root, vm.t, _ofs); const s = vm.cname === 'reload' ? 1 - aimT : 1; px += _ofs[0] * s; py += _ofs[1] * s; pz += _ofs[2] * s; rx += _ofs[3] * s; ry += _ofs[4] * s; rz += _ofs[5] * s; }
   // holster
@@ -6440,7 +6492,8 @@ function poseVM(dt, sprint) {
     else { px -= 0.07 * s; py -= 0.06 * s; pz += 0.03 * s; rx -= 0.22 * s; ry += 0.8 * s; rz += 0.35 * s; }
   }
   if (aiming !== wasAiming3) { wasAiming3 = aiming; sp.roll.v += aiming ? 0.7 : -0.4; sp.z.v += aiming ? 0.2 : 0; sp.rz.v += aiming ? -0.5 : 0.4; }
-  W.root.position.set(px, py, pz); W.root.rotation.set(rx, ry, rz);
+  if (w.melee) swordPose(W, px - W.hip.x, py - W.hip.y, pz - W.hip.z, rx, ry, rz);
+  else { W.root.position.set(px, py, pz); W.root.rotation.set(rx, ry, rz); }
   // parts: reset to rest, then layered motion
   const ck = vm.clip ? vm.clip.tr : null;
   for (const k in W.p) { const o = W.p[k]; if (!o || !o.isObject3D || !o.userData.rest) continue; if (ck && ck[k]) setPart(o, ck[k], vm.t); else { o.position.copy(o.userData.rest.p); o.rotation.copy(o.userData.rest.r); } }
@@ -6484,7 +6537,7 @@ function poseVM(dt, sprint) {
   else { W.rh.position.copy(rr.p); W.rh.rotation.copy(rr.r); }
   // scopes: hide viewmodel when fully scoped (overlay draws the reticle)
   const scoped = W.scoped && aimT > 0.85 && !vm.clip;
-  W.root.visible = !down && !scoped;
+  W.root.visible = !down && !scoped; if (W.arm) W.arm.visible = W.root.visible;
   { const so = W.scoped ? Math.max(0, Math.min(1, (aimT - 0.75) / 0.25)) * (vm.clip ? 0 : 1) : 0; if (scopeEl._o !== so) { scopeEl._o = so; scopeEl.style.opacity = so; } }
   // flash fade
   mfCoreMat.opacity = Math.max(0, mfCoreMat.opacity - dt * 26); mfPetalMat.opacity = Math.max(0, mfPetalMat.opacity - dt * 30); mfFwdMat.opacity = Math.max(0, mfFwdMat.opacity - dt * 32);
