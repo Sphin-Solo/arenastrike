@@ -7033,10 +7033,27 @@ function solveArms(W) {
   W.root.updateMatrixWorld(true);
   _poleR.set(0.55, -1, 0.35).normalize(); _poleL.set(-0.6, -1, 0.25).normalize();
   solveArm('R', W.rh.matrixWorld, _poleR);
-  if (W.lh && W.lh.visible !== false && !WD[cur].melee) solveArm('L', W.lh.matrixWorld, _poleL);
-  else { _armRestL.makeRotationFromEuler(_swEu.set(0.4, 0.3, -1.4)).setPosition(-0.32, -0.62, -0.18); solveArm('L', _armRestL, _poleL); }
-  curlHand('R', WD[cur].melee ? 'grip' : 'grip', vm.trigT || 0);
-  curlHand('L', vm.clip && vm.cname === 'reload' ? 'support' : 'support', 0);
+  const dt = vm._armDt || 0.016, melee = !!WD[cur].melee;
+  const thT = ARMS.thr ? throwTarget(W, dt) : null;
+  // free-hand pose (katana / pistol sprint): low by the hip, pumping with the stride
+  const ph = bobT * 0.5, sprintFree = W.pistol ? Math.max(0, Math.min(1, (sprintT - 0.3) / 0.5)) * (vm.clip ? 0 : 1) : 0;
+  ARMS.free = (ARMS.free || 0) + (((melee || sprintFree > 0) ? 1 : 0) - (ARMS.free || 0)) * Math.min(1, dt * 9);
+  if (thT) { solveArm('L', thT, _poleL); }
+  else {
+    const swingK = melee && vm.clip && vm.clip.sw ? Math.sin(Math.min(1, vm.t / Math.max(0.1, vm.clip.d)) * Math.PI) : 0;
+    _aV.set(-0.3 + Math.sin(ph) * 0.03 * sprintT - swingK * 0.05, -0.56 + Math.abs(Math.cos(ph)) * 0.05 * sprintT + swingK * 0.06, -0.2 - Math.sin(ph) * 0.1 * sprintT - swingK * 0.08);
+    _armRestL.makeRotationFromEuler(_swEu.set(0.4 + Math.sin(ph) * 0.3 * sprintT, 0.3, -1.4)).setPosition(_aV.x, _aV.y, _aV.z);
+    if (W.lh && W.lh.visible !== false && !melee && ARMS.free < 0.999) {
+      if (ARMS.free > 0.001) {     // blend gun hand -> free hand
+        _aV2.setFromMatrixPosition(W.lh.matrixWorld); _aQ2.setFromRotationMatrix(W.lh.matrixWorld);
+        _aV3.setFromMatrixPosition(_armRestL); _aQ.setFromRotationMatrix(_armRestL);
+        const u = easeIO(ARMS.free); _aV2.lerp(_aV3, u); _aV2.y -= Math.sin(u * Math.PI) * 0.06; _aQ2.slerp(_aQ, u);
+        solveArm('L', _thM.compose(_aV2.clone(), _aQ2.clone(), _thS), _poleL);
+      } else solveArm('L', W.lh.matrixWorld, _poleL);
+    } else solveArm('L', _armRestL, _poleL);
+  }
+  curlHand('R', 'grip', vm.trigT || 0);
+  curlHand('L', thT ? 'grip' : ARMS.free > 0.5 ? 'open' : 'support', 0);
 }
 const _poseVM0 = poseVM;
 poseVM = function (dt, sprint) { _poseVM0(dt, sprint); vm._armDt = dt; try { if (ARMS.ok && vm.W) solveArms(vm.W); } catch (e) { console.warn('arms', e); ARMS.ok = false; if (ARMS.root) ARMS.root.visible = false; } };
@@ -7052,6 +7069,119 @@ async function loadArms() {
   } catch (e) { console.warn('arms', e); }
 }
 setTimeout(loadArms, 300);
+
+// ---- explosive models (Guns & Explosives pack): thrown grenades, GL rounds, the RL-7 payload, armoury props ----
+const PROPS = {};
+let projFlareNext = false;
+async function loadProp(id, centre) {
+  if (PROPS[id] !== undefined) return PROPS[id];
+  PROPS[id] = null;
+  try {
+    const r = await fetch('assets/guns/' + id + '.json'); if (!r.ok) return null;
+    const js = parseRealBundle(b64buf((await r.json()).b64));
+    const { root } = instantiateReal(js, realMaterial(id, js.tex));
+    root.traverse(o => { if (o.isMesh) { o.castShadow = true; o.frustumCulled = true; } });
+    const g = new THREE.Group(); g.add(root);
+    if (centre) { root.updateMatrixWorld(true); const c = new THREE.Box3().setFromObject(root).getCenter(new THREE.Vector3()); root.position.sub(c); }
+    PROPS[id] = g; return g;
+  } catch (e) { console.warn('prop', id, e); return null; }
+}
+const PROJ_MDL = { stun: ['m24', 1.25], freeze: ['smoke', 1.25], flash: ['flashbang', 1.25], gl: ['frag', 1.1], flare: ['flare_round', 1], rocket: ['nuke', 0.19] };
+const _spawnProj0 = spawnProj;
+spawnProj = function (kind, x, y, z, vx, vy, vz, owner, mult) {
+  const p = projs.find(q => !q.active); const fl = projFlareNext; projFlareNext = false;
+  _spawnProj0(kind, x, y, z, vx, vy, vz, owner, mult);
+  if (!p || !p.active) return;
+  p.mdlKey = fl ? 'flare' : kind; p.flare = fl;
+  if (p.mdls) for (const k in p.mdls) p.mdls[k].visible = false;
+  const spec = PROJ_MDL[p.mdlKey], tpl = spec && PROPS[spec[0]];
+  if (fl) { p.glowM.color.setHex(0xff3a22); p.glow.scale.setScalar(1.3); p.nade.visible = false; return; }
+  if (!tpl) return;
+  p.mdls = p.mdls || {};
+  if (!p.mdls[p.mdlKey]) { const c = tpl.clone(); c.scale.setScalar(spec[1]); p.g.add(c); p.mdls[p.mdlKey] = c; }
+  const m = p.mdls[p.mdlKey]; m.visible = true; p.nade.visible = false; p.body.visible = false;
+  m.rotation.set(Math.random() * 6, Math.random() * 6, 0); p.spin = kind === 'rocket' ? 0 : 9 + Math.random() * 6;
+};
+const _updateProjs0 = updateProjs;
+updateProjs = function (dt) {
+  _updateProjs0(dt);
+  for (const p of projs) {
+    if (!p.active || !p.mdls) continue;
+    const m = p.mdls[p.mdlKey]; if (!m || !m.visible) continue;
+    if (p.spin) { m.rotation.x += dt * p.spin; m.rotation.z += dt * p.spin * 0.4; p.spin *= Math.pow(0.35, dt); }
+  }
+};
+// armoury dressing next to the weapon chest: C4 bricks, a claymore, an AT mine, pipe bombs and a crate of molotovs
+async function dressArmoury() {
+  const set = [['c4', [0.92, 0.0, -0.18], [0, 0.4, 0], 1], ['c4', [0.98, 0.066, -0.12], [0, -0.2, 0], 1], ['pipebomb', [-0.95, 0.03, 0.2], [0, 0, Math.PI / 2], 1],
+    ['pipebomb', [-0.9, 0.03, 0.29], [0, 0.3, Math.PI / 2], 1], ['claymore', [-1.05, 0.18, -0.35], [0, 0.6, 0], 1], ['atmine', [1.05, 0.025, 0.42], [0, 0.5, 0], 1],
+    ['molotov', [-0.98, 0.1, -0.05], [0, 0, 0], 1], ['molotov', [-1.04, 0.1, 0.04], [0, 1, 0], 1], ['frag', [0.82, 0.0, 0.18], [0, 0, 0], 1], ['frag', [0.86, 0.0, 0.27], [Math.PI / 2, 0, 0.6], 1]];
+  for (const [id, pos, rot, sc] of set) {
+    const tpl = await loadProp(id, false); if (!tpl) continue;
+    const c = tpl.clone(); c.position.set(pos[0], pos[1] - CHEST_POS.y + 0.0, pos[2]); c.rotation.set(rot[0], rot[1], rot[2]); c.scale.setScalar(sc);
+    chestG.add(c);
+  }
+}
+async function loadProjModels() {
+  if (typeof fetch !== 'function' || location.protocol === 'file:') return;
+  for (const k in PROJ_MDL) { const id = PROJ_MDL[k][0]; if (id !== 'flare_round') await loadProp(id, id !== 'nuke'); }
+  try { await dressArmoury(); } catch (e) { console.warn('armoury', e); }
+}
+setTimeout(loadProjModels, 1500);
+
+// ---- first-person grenade throw: left hand leaves the gun, winds up by the shoulder, releases, follows through ----
+const THROW_KEYS = [   // t, camera-space palm position, finger direction, palm normal
+  [0.13, [-0.2, -0.1, -0.16], [0.15, 1, 0.25], [0.25, -0.05, -1]],
+  [0.2, [-0.13, -0.02, -0.26], [0.05, 0.9, -0.4], [0.15, -0.45, -1]],
+  [0.27, [-0.02, -0.05, -0.52], [0, 0.25, -1], [0, -1, -0.3]],
+  [0.4, [0.02, -0.34, -0.42], [0, -0.6, -1], [-0.2, -1, 0.3]],
+  [0.56, [-0.24, -0.55, -0.22], [0.2, 0.2, -1], [0.2, -1, 0]]
+];
+const THROW_REL = 0.24, THROW_END = 0.74;
+const _thM = new THREE.Matrix4(), _thQa = new THREE.Quaternion(), _thQb = new THREE.Quaternion(), _thPa = new THREE.Vector3(), _thPb = new THREE.Vector3(), _thX = new THREE.Vector3(), _thY = new THREE.Vector3(), _thZ = new THREE.Vector3();
+function throwKeyM(k, outP, outQ) {
+  _thX.set(...k[2]).normalize(); _thY.set(...k[3]); _thY.addScaledVector(_thX, -_thY.dot(_thX)).normalize(); _thZ.crossVectors(_thX, _thY);
+  _thM.makeBasis(_thX, _thY, _thZ); outQ.setFromRotationMatrix(_thM); outP.set(...k[1]);
+  // keys describe the palm: shift back to the procedural handL origin (palm sits ~2.6cm below it)
+  outP.addScaledVector(_thY, 0.022);
+}
+const _throwSkill0 = throwSkill;
+throwSkill = function (kind) {
+  if (!ARMS.ok || !vm.W || WD[cur].melee) return _throwSkill0(kind);
+  if (state !== 'play' || down || frozen() || skillCD[kind] > 0 || ARMS.thr) return;
+  ARMS.thr = { t: 0, kind, done: false, start: new THREE.Matrix4().copy(vm.W.lh.matrixWorld) };
+  sp.y.v -= 0.25; sp.rz.v -= 0.4; sp.rx.v -= 0.4;
+  const tpl = PROPS[(PROJ_MDL[kind] || [])[0]];
+  if (tpl) { if (!ARMS.nade || ARMS.nade.userData.k !== kind) { if (ARMS.nade) gunScene.remove(ARMS.nade); ARMS.nade = tpl.clone(); ARMS.nade.userData.k = kind; ARMS.nade.scale.setScalar(1.15); gunScene.add(ARMS.nade); ARMS.nade.traverse(o => { if (o.isMesh) { o.castShadow = false; o.frustumCulled = false; } }); } ARMS.nade.visible = false; }
+  play('swap', 0.4, 1.3);
+};
+const _thT = new THREE.Matrix4(), _thP = new THREE.Vector3(), _thQ = new THREE.Quaternion(), _thS = new THREE.Vector3(1, 1, 1);
+function throwTarget(W, dt) {
+  const th = ARMS.thr; th.t += dt;
+  if (!th.done && th.t >= THROW_REL) { th.done = true; _throwSkill0(th.kind); }
+  if (th.t >= THROW_END) { ARMS.thr = null; if (ARMS.nade) ARMS.nade.visible = false; return null; }
+  // key list with the live gun grip at both ends
+  const t = th.t, keys = THROW_KEYS;
+  if (t < keys[0][0]) {           // leave the gun
+    const u = easeIO(t / keys[0][0]); throwKeyM(keys[0], _thPb, _thQb);
+    _thPa.setFromMatrixPosition(th.start); _thQa.setFromRotationMatrix(th.start);
+    _thP.lerpVectors(_thPa, _thPb, u); _thP.y -= Math.sin(u * Math.PI) * 0.12; _thQ.copy(_thQa).slerp(_thQb, u);
+  } else if (t > keys[keys.length - 1][0]) {   // back onto the gun
+    const u = easeIO(Math.min(1, (t - keys[keys.length - 1][0]) / (THROW_END - keys[keys.length - 1][0])));
+    throwKeyM(keys[keys.length - 1], _thPa, _thQa); W.root.updateMatrixWorld(true); _thPb.setFromMatrixPosition(W.lh.matrixWorld); _thQb.setFromRotationMatrix(W.lh.matrixWorld);
+    _thP.lerpVectors(_thPa, _thPb, u); _thQ.copy(_thQa).slerp(_thQb, u);
+  } else {
+    let i = 0; while (i < keys.length - 2 && t > keys[i + 1][0]) i++;
+    const a = keys[i], b = keys[i + 1], u = (t - a[0]) / (b[0] - a[0]), e = i === 1 ? easeI(u) : i === 2 ? easeO(u) : easeIO(u);
+    throwKeyM(a, _thPa, _thQa); throwKeyM(b, _thPb, _thQb); _thP.lerpVectors(_thPa, _thPb, e); _thQ.copy(_thQa).slerp(_thQb, e);
+  }
+  // grenade rides in the palm until release
+  if (ARMS.nade) {
+    const show = t > 0.05 && !th.done; ARMS.nade.visible = show;
+    if (show) { const a = ARMS.B['f_middle.01.L'], b = ARMS.B['thumb.02.L']; a.getWorldPosition(_aV); b.getWorldPosition(_aV2); ARMS.nade.position.lerpVectors(_aV, _aV2, 0.5); ARMS.nade.quaternion.copy(_thQ); }
+  }
+  return _thT.compose(_thP, _thQ, _thS);
+}
 
 
 
@@ -7153,6 +7283,7 @@ function fireGL(flare) {
   const d = tA.set(0, flare ? 0.02 : 0.06, -1).normalize().applyQuaternion(camera.quaternion);
   const o = tB.copy(camera.position).addScaledVector(d, 0.8); o.y -= 0.1;
   const sp0 = flare ? 46 : 30, vx = d.x * sp0 + vel.x * 0.3, vy = d.y * sp0 + (flare ? 0.8 : 2.2), vz = d.z * sp0 + vel.z * 0.3, dm = upg.dmg * (flare ? 0.7 : 1);
+  if (flare) projFlareNext = true;
   spawnProj('gl', o.x, o.y, o.z, vx, vy, vz, net.myId, dm); shareProj('gl', o.x, o.y, o.z, vx, vy, vz, dm);
   if (flare) emit(o.x, o.y, o.z, 1, 0.25, 0.15, 14, 3, 1.4); else
   emit(o.x, o.y, o.z, 0.8, 1, 0.5, 8, 2, 1);
