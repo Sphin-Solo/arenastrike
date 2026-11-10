@@ -6323,10 +6323,15 @@ function quickMelee() {
 // ---- gunplay ----
 const _mz = new THREE.Vector3();
 function muzzleWorld(out) { const W = vm.W; if (!W || !W.muzzle) return out.set(0.15, -0.12, -0.8).applyMatrix4(camera.matrixWorld); W.root.updateMatrixWorld(true); W.muzzle.getWorldPosition(out); camera.updateMatrixWorld(); return out.applyMatrix4(camera.matrixWorld); }
+// tactical-shooter accuracy: planted = pinpoint first shot (hip or ADS); moving, airborne and spraying cost accuracy.
+// Shotguns keep a (tighter) pellet pattern; scoped rifles stay loose when no-scoped.
 function currentSpread(w) {
-  const moving = Math.min(1, Math.hypot(vel.x, vel.z) / 7), ads = aimT > 0.6;
-  let s = (ads ? w.sa : w.sh) + moving * (w.mv || 0.02) * (ads ? 0.4 : 1) + (onGround ? 0 : 0.06) + (stunT > 0 ? 0.04 : 0) + vm.bloom;
-  if (sprintT > 0.3) s += 0.04;
+  const spd = Math.hypot(vel.x, vel.z), moving = Math.max(0, Math.min(1, (spd - 1.0) / 5)), ads = aimT > 0.6;
+  const shotgun = (w.pellets || 1) > 1, baseW = ads ? w.sa : w.sh;
+  const base = shotgun ? baseW * 0.75 : (w.scoped && !ads ? w.sh * 0.6 : 0);
+  let s = base + moving * ((w.mv || 0.02) + (shotgun ? 0 : baseW * 0.6)) * (ads ? 0.45 : 1)
+    + (onGround ? 0 : 0.045) + (stunT > 0 ? 0.03 : 0) + vm.bloom * (ads ? 0.6 : 1);
+  if (sprintT > 0.3) s += 0.03;
   return s;
 }
 function fireHitscan(w) {
@@ -6390,7 +6395,7 @@ function shoot() {
   vm.sinceShot = 0;
   if (cur === 'rocket') fireRocket(); else if (cur === 'gl' || cur === 'flare') fireGL(cur === 'flare'); else fireHitscan(w);
   recoilKick(w); vm.shotIdx++;
-  vm.bloom = Math.min(0.05, vm.bloom + (w.bloom || 0.002));
+  vm.bloom = Math.min(0.035, vm.bloom + (w.bloom || 0.002) * 0.8);
   // viewmodel kick
   const ads = aimT > 0.6, k = w.kick;
   sp.z.v += (ads ? 0.45 : 0.85) * Math.min(2.2, k); sp.rx.v += (ads ? 0.7 : 1.6) * Math.min(2.5, k); sp.ry.v += R(-1, 1) * (ads ? 0.2 : 0.5) * k; sp.rz.v += R(-1, 1) * (ads ? 0.35 : 1.2) * k; sp.y.v += (ads ? 0.05 : 0.14) * k; sp.roll.v += R(-1, 1) * 0.25 * k;
@@ -6569,7 +6574,7 @@ function poseVM(dt, sprint) {
   const tw = vm.cname === 'swing' && vm.trailWin && vm.t > vm.trailWin[0] && vm.t < vm.trailWin[1];
   updateTrail3(dt, w.melee ? W : null, tw);
   vm.sinceShot += dt;
-  if (vm.sinceShot > 0.25) vm.bloom = Math.max(0, vm.bloom - dt * 0.12);
+  if (vm.sinceShot > 0.12) vm.bloom = Math.max(0, vm.bloom - dt * (vm.sinceShot > 0.3 ? 0.6 : 0.25));   // quick reset between taps/bursts
   if (gunJolt > 0) { sp.y.v += gunJolt * 0.2; sp.rx.v -= gunJolt * 1.0; sp.roll.v += gunJolt * 0.35 * (Math.random() < 0.5 ? -1 : 1); gunJolt = 0; }
 }
 function updateCamera(dt, sprint) {
