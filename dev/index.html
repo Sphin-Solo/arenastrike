@@ -399,7 +399,7 @@
   <button class="mpb" id="editCtl" style="display:none;width:100%;margin-bottom:10px">CUSTOMIZE TOUCH CONTROLS</button>
   <button id="play">PLAY</button>
   <div id="note"></div>
-  <div id="cc0" style="margin-top:10px;font-size:10px;line-height:1.5;opacity:.55;letter-spacing:.04em">CC0 assets: Guns &amp; Explosives pack (3dmodelscc0) · RTS Mercenaries 2 · Snake's Authentic Gun Sounds 1 &amp; 2 (SnakeF8 / F8 Studios)</div>
+  <div id="cc0" style="margin-top:10px;font-size:10px;line-height:1.5;opacity:.55;letter-spacing:.04em">CC0 assets: Guns &amp; Explosives pack (3dmodelscc0) · RTS Mercenaries 2 · FPS Arms Rig · Snake's Authentic Gun Sounds 1 &amp; 2 (SnakeF8 / F8 Studios)</div>
 </div></div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
@@ -5985,7 +5985,7 @@ function clipShells(W, n, empty, o) {
   tr.root.push([t, -0.02, 0.02, 0.02, 0.1, 0, -0.45], [t + 0.26, 0, 0, 0, 0, 0, 0]);
   return { d: t + 0.3, tr, ev, vis };
 }
-function shellOff(W, worldInBody, dz) { const p = W.p.shell || W.p.loadRound; const r = p.userData.rest; return [worldInBody.x - r.p.x, worldInBody.y - r.p.y, worldInBody.z - r.p.z + dz, 0, 0, 0]; }
+function shellOff(W, worldInBody, dz) { const p = W.p.shell || W.p.loadRound; if (!p || !p.userData.rest) return [0, 0, 0, 0, 0, 0]; const r = p.userData.rest; return [worldInBody.x - r.p.x, worldInBody.y - r.p.y, worldInBody.z - r.p.z + dz, 0, 0, 0]; }
 // pump / bolt cycling after a shot
 function clipPump(W) { return { d: 0.5, tr: { lh: [[0, 'fore'], [0.5, 'fore']], pump: [[0, 0, 0, 0], [0.12, 0, 0, 0], [0.24, 0, 0, 0.095, 0, 0, 0, 'o'], [0.38, 0, 0, 0, 0, 0, 0, 'i']], root: [[0, 0, 0, 0, 0, 0, 0], [0.24, 0, -0.008, 0.012, -0.02, 0, 0.05], [0.42, 0, 0, 0, 0, 0, 0]] }, ev: [[0.2, 'pumpBack'], [0.22, 'eject'], [0.36, 'pumpFwd']], vis: {} }; }
 function clipBolt(W) {

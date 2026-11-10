@@ -386,7 +386,7 @@
   <label>Sensitivity <input id="sens" type="range" min="0.4" max="3" step="0.05" value="1"><span id="sensv">1.00</span></label>
   <div class="loadout"><div class="skl">LOADOUT</div>
     <div class="lrow"><b>1</b><span>PRIMARY · KV-4 CARBINE</span></div><div class="lrow"><b>2</b><span>SECONDARY · P-17 PISTOL</span></div><div class="lrow"><b>3</b><span>MELEE · KATANA</span></div>
-    <small>Roll the weapon chest between rooms for 14 other firearms — primaries replace slot 1, sidearms slot 2.</small></div>
+    <small>Roll the weapon chest between rooms for 20 other firearms — primaries replace slot 1, sidearms slot 2.</small></div>
   <div class="mp"><div class="skl">CO-OP MULTIPLAYER <span id="mpTag"></span></div>
     <div id="mpRows">
       <div class="mprow"><input id="mpName" maxlength="12" placeholder="Your name" autocomplete="off"><button class="mpb" id="mpHost">HOST ROOM</button></div>
@@ -399,7 +399,7 @@
   <button class="mpb" id="editCtl" style="display:none;width:100%;margin-bottom:10px">CUSTOMIZE TOUCH CONTROLS</button>
   <button id="play">PLAY</button>
   <div id="note"></div>
-  <div id="cc0" style="margin-top:10px;font-size:10px;line-height:1.5;opacity:.55;letter-spacing:.04em">CC0 assets: Guns &amp; Explosives pack (3dmodelscc0) · RTS Mercenaries 2 · Snake's Authentic Gun Sounds 1 &amp; 2 (SnakeF8 / F8 Studios)</div>
+  <div id="cc0" style="margin-top:10px;font-size:10px;line-height:1.5;opacity:.55;letter-spacing:.04em">CC0 assets: Guns &amp; Explosives pack (3dmodelscc0) · RTS Mercenaries 2 · FPS Arms Rig · Snake's Authentic Gun Sounds 1 &amp; 2 (SnakeF8 / F8 Studios)</div>
 </div></div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
@@ -4543,7 +4543,7 @@ function updateHUD(dt) {
   }
   if (hud.w !== cur) { hud.w = cur; el.wname.textContent = w.name; el.wmode.textContent = w.mode; }
   const sh = loadout.primary + loadout.secondary + loadout.special + curSlot; if (hud.slots !== sh) { hud.slots = sh; el.slots.innerHTML = slotsHTML(); }
-  const rt = reloading ? 'RELOADING' : (!w.melee && ammo === 0 ? (res > 0 ? 'RELOAD  [R]' : 'NO AMMO') : (!w.melee && ammo <= Math.ceil(w.mag * 0.25) && res > 0 ? 'LOW AMMO' : ''));
+  const rt = reloading ? 'RELOADING' : (!w.melee && ammo === 0 ? (res > 0 ? 'RELOAD  [R]' : 'NO AMMO') : (!w.melee && w.mag > 2 && ammo <= Math.ceil(w.mag * 0.25) && res > 0 ? 'LOW AMMO' : ''));
   if (hud.reload !== rt) { hud.reload = rt; el.reload.textContent = rt; el.reload.className = rt === 'LOW AMMO' ? 'lo' : rt ? 'on' : ''; }
   // crosshair: gap follows the real bullet spread (CS style)
   const spr = w.melee ? 0.01 : currentSpread(w);
@@ -5985,7 +5985,7 @@ function clipShells(W, n, empty, o) {
   tr.root.push([t, -0.02, 0.02, 0.02, 0.1, 0, -0.45], [t + 0.26, 0, 0, 0, 0, 0, 0]);
   return { d: t + 0.3, tr, ev, vis };
 }
-function shellOff(W, worldInBody, dz) { const p = W.p.shell || W.p.loadRound; const r = p.userData.rest; return [worldInBody.x - r.p.x, worldInBody.y - r.p.y, worldInBody.z - r.p.z + dz, 0, 0, 0]; }
+function shellOff(W, worldInBody, dz) { const p = W.p.shell || W.p.loadRound; if (!p || !p.userData.rest) return [0, 0, 0, 0, 0, 0]; const r = p.userData.rest; return [worldInBody.x - r.p.x, worldInBody.y - r.p.y, worldInBody.z - r.p.z + dz, 0, 0, 0]; }
 // pump / bolt cycling after a shot
 function clipPump(W) { return { d: 0.5, tr: { lh: [[0, 'fore'], [0.5, 'fore']], pump: [[0, 0, 0, 0], [0.12, 0, 0, 0], [0.24, 0, 0, 0.095, 0, 0, 0, 'o'], [0.38, 0, 0, 0, 0, 0, 0, 'i']], root: [[0, 0, 0, 0, 0, 0, 0], [0.24, 0, -0.008, 0.012, -0.02, 0, 0.05], [0.42, 0, 0, 0, 0, 0, 0]] }, ev: [[0.2, 'pumpBack'], [0.22, 'eject'], [0.36, 'pumpFwd']], vis: {} }; }
 function clipBolt(W) {
@@ -6105,17 +6105,23 @@ const WD = {
   sniper:  { name: 'LR-338 SNIPER', short: 'LR-338', slot: 'primary', mdl: mdlLR338, auto: false, bolt: true, rpm: 46, mag: 5, res: 25, dmg: [160, 400], rng: [200, 300, 1], duel: [95, 150], sh: 0.07, sa: 0, mv: 0.06, rec: { v: 0.055, h: 0.01, n: 1 }, kick: 3.4, fov: 16, scoped: 'cross', snd: 'sniper', mag3: { after: 'bolt', speed: 0.9 }, mode: 'BOLT', cls: 'sr' },
   lmg:     { name: 'MK-46 LMG', short: 'MK-46', slot: 'primary', mdl: mdlMK46, auto: true, rpm: 740, mag: 100, res: 200, dmg: [36, 100], rng: [30, 70, 0.7], duel: [20, 56], sh: 0.04, sa: 0.0055, mv: 0.05, bloom: 0.003, rec: { v: 0.0085, h: 0.006, n: 6, cl: 0.03 }, kick: 1.1, fov: 55, snd: 'lmg', lmgReload: true, mode: 'AUTO', cls: 'lmg' },
   drum:    { name: 'SK-31 DRUM SMG', short: 'SK-31', slot: 'primary', mdl: mdlVX9, auto: true, rpm: 840, mag: 71, res: 284, dmg: [23, 60], rng: [14, 38, 0.6], duel: [14, 38], sh: 0.03, sa: 0.0065, mv: 0.016, bloom: 0.003, rec: { v: 0.0062, h: 0.0042, n: 8, cl: 0.04 }, kick: 0.75, fov: 58, snd: 'smg', mag3: { speed: 0.85, after: 'ch' }, mode: 'AUTO', cls: 'smg', chCycle: true },
+  scar:    { name: 'BR-17 BATTLE RIFLE', short: 'BR-17', slot: 'primary', mdl: mdlKV4, auto: true, rpm: 610, mag: 20, res: 100, dmg: [50, 145], rng: [30, 75, 0.7], duel: [34, 98], sh: 0.036, sa: 0.0035, mv: 0.045, bloom: 0.006, rec: { v: 0.017, h: 0.007, n: 8, cl: 0.05 }, kick: 1.5, fov: 54, snd: 'dmr', mag3: { after: 'catch' }, mode: 'AUTO', cls: 'ar' },
+  mp5k:    { name: 'KP-5 COMPACT SMG', short: 'KP-5', slot: 'primary', mdl: mdlVX9, auto: true, rpm: 920, mag: 30, res: 180, dmg: [22, 58], rng: [10, 30, 0.6], duel: [13, 36], sh: 0.024, sa: 0.0065, mv: 0.012, bloom: 0.003, rec: { v: 0.0064, h: 0.0045, n: 7, cl: 0.05 }, kick: 0.65, fov: 58, snd: 'smg', mag3: { after: 'ch', speed: 1.1 }, mode: 'AUTO', cls: 'smg' },
+  m14:     { name: 'MR-14 BATTLE MARKSMAN', short: 'MR-14', slot: 'primary', mdl: mdlDM14, auto: false, rpm: 300, mag: 20, res: 80, dmg: [85, 220], rng: [60, 130, 0.85], duel: [52, 118], sh: 0.05, sa: 0.0012, mv: 0.045, rec: { v: 0.026, h: 0.007, n: 1 }, kick: 2.2, fov: 24, scoped: 'cross', snd: 'sniper', mag3: { after: 'ch' }, mode: 'SEMI', cls: 'ar', chCycle: true },
+  spas:    { name: 'SG-12 COMBAT SHOTGUN', short: 'SG-12', slot: 'primary', mdl: mdlRS12, auto: false, rpm: 210, mag: 8, res: 40, dmg: [24, 38], pellets: 9, rng: [8, 24, 0.25], duel: [10, 15], sh: 0.07, sa: 0.05, mv: 0.01, rec: { v: 0.04, h: 0.012, n: 1 }, kick: 2.8, fov: 62, snd: 'shotgun', shells: { per: 0.44 }, mode: 'SEMI', cls: 'sg' },
   gatling: { name: 'TEMPEST MINIGUN', short: 'TEMPEST', slot: 'primary', mdl: mdlTempest, auto: true, spin: true, rpm: 1500, mag: 200, res: 400, dmg: [24, 55], rng: [25, 60, 0.7], duel: [9, 22], sh: 0.045, sa: 0.03, mv: 0.02, rec: { v: 0.0035, h: 0.005, n: 3 }, kick: 0.5, fov: 72, snd: 'gat', boxReload: true, mode: 'ROTARY', cls: 'heavy' },
   gl:      { name: 'THUMPER GL', short: 'THUMPER', slot: 'primary', mdl: mdlThumper, auto: false, rpm: 110, mag: 6, res: 12, dmg: [175, 175], duel: [80, 80], sh: 0.004, sa: 0.002, rec: { v: 0.04, h: 0.01, n: 1 }, kick: 2.2, fov: 62, snd: 'gl', shells: { per: 0.5, loadSnd: 'glLoad' }, mode: 'SEMI', cls: 'heavy', proj: true },
   rocket:  { name: 'RL-7 LAUNCHER', short: 'RL-7', slot: 'special', mdl: mdlRL7, auto: false, rpm: 70, mag: 3, res: 0, dmg: [300, 300], duel: [130, 130], sh: 0.004, sa: 0.002, rec: { v: 0.05, h: 0.01, n: 1 }, kick: 2.8, fov: 60, snd: null, mode: 'ULT', cls: 'heavy', proj: true },
   pistol:  { name: 'P-17 PISTOL', short: 'P-17', slot: 'secondary', mdl: mdlP17, auto: false, rpm: 420, mag: 17, res: 85, dmg: [30, 90], rng: [15, 40, 0.6], duel: [20, 60], sh: 0.02, sa: 0.004, mv: 0.02, rec: { v: 0.016, h: 0.005, n: 1 }, kick: 0.9, fov: 62, snd: 'pistol', mag3: { drop: 'free', after: 'slide', speed: 1.15, tilt: [-0.02, 0.04, 0.02, 0.15, 0.15, 0.55] }, mode: 'SEMI', cls: 'pistol' },
   deagle:  { name: 'HC-50 HAND CANNON', short: 'HC-50', slot: 'secondary', mdl: mdlHC50, auto: false, rpm: 170, mag: 7, res: 35, dmg: [70, 210], rng: [20, 50, 0.6], duel: [45, 100], sh: 0.03, sa: 0.003, mv: 0.03, rec: { v: 0.042, h: 0.012, n: 1 }, kick: 2.2, fov: 60, snd: 'deagle', mag3: { drop: 'free', after: 'slide', tilt: [-0.02, 0.04, 0.02, 0.15, 0.15, 0.55] }, mode: 'SEMI', cls: 'pistol' },
   revolver:{ name: '.44 MAGNUM', short: '.44 MAG', slot: 'secondary', mdl: mdlMagnum, auto: false, rpm: 150, mag: 6, res: 30, dmg: [95, 280], rng: [25, 55, 0.6], duel: [45, 110], sh: 0.025, sa: 0.002, mv: 0.025, rec: { v: 0.045, h: 0.012, n: 1 }, kick: 2.4, fov: 60, snd: 'rev', revolver: true, mode: 'D/A', cls: 'pistol' },
+  luger:   { name: 'LG-08 TOGGLE PISTOL', short: 'LG-08', slot: 'secondary', mdl: mdlP17, auto: false, rpm: 380, mag: 8, res: 48, dmg: [38, 110], rng: [18, 45, 0.6], duel: [26, 72], sh: 0.02, sa: 0.003, mv: 0.02, rec: { v: 0.02, h: 0.005, n: 1 }, kick: 1.1, fov: 62, snd: 'pistol', mag3: { drop: 'free', after: 'slide', speed: 1.1, tilt: [-0.02, 0.04, 0.02, 0.15, 0.15, 0.55] }, mode: 'SEMI', cls: 'pistol' },
+  flare:   { name: 'FL-1 FLARE LAUNCHER', short: 'FL-1', slot: 'secondary', mdl: mdlP17, auto: false, rpm: 90, mag: 1, res: 12, dmg: [120, 120], duel: [60, 60], sh: 0.004, sa: 0.002, rec: { v: 0.05, h: 0.01, n: 1 }, kick: 2.4, fov: 62, snd: 'gl', shells: { per: 0.7, loadSnd: 'glLoad' }, mode: 'SINGLE', cls: 'pistol', proj: true },
   mpistol: { name: 'AP-9 MACHINE PISTOL', short: 'AP-9', slot: 'secondary', mdl: mdlAP9, auto: true, rpm: 1050, mag: 30, res: 150, dmg: [19, 50], rng: [10, 25, 0.55], duel: [11, 30], sh: 0.028, sa: 0.009, mv: 0.015, bloom: 0.004, rec: { v: 0.0075, h: 0.006, n: 5 }, kick: 0.6, fov: 62, snd: 'mpistol', mag3: { drop: 'free', after: 'slide', tilt: [-0.02, 0.04, 0.02, 0.15, 0.15, 0.55] }, mode: 'AUTO', cls: 'pistol' },
   blade:   { name: 'KATANA', short: 'KATANA', slot: 'melee', mdl: mdlSword, melee: true, rpm: 115, mag: 0, res: 0, dmg: [140, 140], duel: [55, 55], range: 3.4, fov: 75, mode: 'MELEE', cls: 'melee' },
 };
 const WEAP = WD;
-const PRIMARIES = ['rifle', 'ak', 'smg', 'drum', 'shotgun', 'autosg', 'dmr', 'sniper', 'lmg', 'gatling', 'gl'], SECONDARIES = ['pistol', 'deagle', 'revolver', 'mpistol'];
+const PRIMARIES = ['rifle', 'ak', 'smg', 'drum', 'scar', 'mp5k', 'shotgun', 'autosg', 'spas', 'dmr', 'm14', 'sniper', 'lmg', 'gatling', 'gl'], SECONDARIES = ['pistol', 'luger', 'deagle', 'revolver', 'mpistol', 'flare'];
 const WEAP_ORDER = ['rifle', 'pistol', 'blade'];
 // ---- build every viewmodel once, remember rest transforms ----
 const VMM = {};
@@ -6123,7 +6129,7 @@ for (const id in WD) { const W = WD[id].mdl(); W.wid = id; VMM[id] = W; prepVM(i
 function prepVM(id, W) {
   if (!W.sight) W.sight = new THREE.Vector3(0, 0.1, 0); if (!W.adsDist) W.adsDist = 0.2;
   if (WD[id].melee) { W.hip.set(SW_IDLE[0], SW_IDLE[1], SW_IDLE[2]); }
-  if (W.pistol) { W.hip.add(new THREE.Vector3(-0.012, 0.012, -0.05)); W.hipRot = new THREE.Vector3(0.04, 0.2, 0.08); W.adsDist = Math.max(W.adsDist, 0.42); } else if (!WD[id].melee && id !== 'gatling') W.hip.add(new THREE.Vector3(-0.02, 0.028, -0.07));
+  if (W.pistol) { W.hip.add(new THREE.Vector3(-0.012, 0.012, -0.09)); W.hipRot = new THREE.Vector3(0.04, 0.2, 0.08); W.adsDist = Math.max(W.adsDist, 0.42); } else if (!WD[id].melee && id !== 'gatling') W.hip.add(new THREE.Vector3(-0.02, 0.028, -0.07));
   W.ret = []; W.root.traverse(o => { if (o.isMesh) { o.frustumCulled = false; if (o.userData.reticle) W.ret.push(o.material); } });
   W.adsPos = new THREE.Vector3(-W.sight.x, -W.sight.y, -W.adsDist - W.sight.z);
   const parts = Object.assign({}, W.p, { mag: W.mag, spare: W.magSpare });
@@ -6382,7 +6388,7 @@ function shoot() {
   fireCD = 60 / w.rpm / upg.rate;
   if (vm.sinceShot > 0.32) { vm.shotIdx = 0; vm.sway0 = Math.random() * 6; }
   vm.sinceShot = 0;
-  if (cur === 'rocket') fireRocket(); else if (cur === 'gl') fireGL(); else fireHitscan(w);
+  if (cur === 'rocket') fireRocket(); else if (cur === 'gl' || cur === 'flare') fireGL(cur === 'flare'); else fireHitscan(w);
   recoilKick(w); vm.shotIdx++;
   vm.bloom = Math.min(0.05, vm.bloom + (w.bloom || 0.002));
   // viewmodel kick
@@ -6505,7 +6511,8 @@ function poseVM(dt, sprint) {
     px += Math.sin(ph) * 0.024 * s; py -= Math.abs(Math.sin(ph)) * 0.02 * s;
     if (W.pistol) { rx += 1.0 * s; ry -= 0.25 * s; rz -= 0.2 * s; py += 0.1 * s; px -= 0.02 * s; pz += 0.05 * s; }      // tac-sprint: muzzle up
     else if (w.melee) { rx += 0.25 * s; py -= 0.03 * s; }
-    else { px -= 0.07 * s; py -= 0.06 * s; pz += 0.03 * s; rx -= 0.22 * s; ry += 0.8 * s; rz += 0.35 * s; }
+    else if (w.cls === 'heavy' || w.cls === 'lmg') { px -= 0.07 * s; py -= 0.06 * s; pz += 0.03 * s; rx -= 0.22 * s; ry += 0.8 * s; rz += 0.35 * s; }
+    else { rx += 0.62 * s; ry -= 0.16 * s; rz -= 0.38 * s; py -= 0.085 * s; px += 0.055 * s; pz += 0.02 * s; rz += Math.sin(ph) * 0.06 * s; rx += Math.abs(Math.sin(ph)) * 0.05 * s; }   // tac-sprint: rifle up and across, support hand pumping
   }
   if (aiming !== wasAiming3) { wasAiming3 = aiming; sp.roll.v += aiming ? 0.7 : -0.4; sp.z.v += aiming ? 0.2 : 0; sp.rz.v += aiming ? -0.5 : 0.4; }
   if (w.melee) swordPose(W, px - W.hip.x, py - W.hip.y, pz - W.hip.z, rx, ry, rz);
@@ -6647,6 +6654,18 @@ const REAL_CFG = {
     pump: 'Fore_Stock', pumpHand: [0, -3.7, 0], trig: 'Trigger', adsDist: 0.34, len: 0.7 },
   pistol: { file: 'makarov', grip: [0.47, 1.6, 1.6], sight: [0.47, 6.05, 1.0], muzzle: [0.48, 4.73, -13.1], eject: [1.5, 5.2, -3.4],
     mag: 'Magazine', magFix: [0, -1.0, -8.0], slide: 'Slide', hammer: 'Hammer', trig: 'Trigger', adsDist: 0.42, len: 0.17, pistol: true },
+  luger: { file: 'luger', grip: [2.9, 1.5, 2.5], sight: [2.9, 6.9, 3.0], muzzle: [2.9, 5.6, -17.6], eject: [2.9, 7.0, -1.0],
+    mag: 'Clip', slide: 'Slide', trig: 'Trigger', adsDist: 0.42, len: 0.2, pistol: true },
+  flare: { file: 'flare', grip: [0, 0.5, 3.5], sight: [0, 4.4, 0], muzzle: [0, 1.8, -13.5], eject: [0, 3, 0], port: [0, 2.2, -1],
+    trig: 'Trigger', hammer: 'Hammer', adsDist: 0.42, len: 0.2, pistol: true },
+  scar: { file: 'scar', grip: [0, -1.5, 14], optic: { y: 11.6, z: 10, rail: 8.5 }, muzzle: [0, 4.0, -52.5], eject: [1.5, 3.5, 2], fore: [0, -0.5, -14],
+    mag: 'Magazine', chAnchor: [-1.5, 5.5, -4], boltCatch: [-1.2, -1, 4], adsDist: 0.26, len: 0.7 },
+  mp5k: { file: 'mp5k', grip: [0, 0.5, 9.5], optic: { y: 11.2, z: 3, rail: 8.6 }, muzzle: [0, 5.8, -16.8], eject: [1.5, 6, -2], fore: [0, 0.6, -5.5],
+    mag: 'Magazine', chAnchor: [-1.5, 7, -12], adsDist: 0.22, len: 0.35 },
+  m14: { file: 'm14', grip: [0, -3, 20], sight: [0, 7.6, 18], scoped: true, muzzle: [0, 0.2, -60.5], eject: [1.5, 1.5, 5], fore: [0, -4.5, -14],
+    mag: 'Magazine', chAnchor: [2.5, 1, 0], adsDist: 0.3, len: 0.8 },
+  spas: { file: 'spas', grip: [0, -1, 37], sight: [0, 6.6, 15], hide: ['Stock'], muzzle: [0, 3.6, -34.5], eject: [1.5, 2.5, 18], port: [0, -3, 22], fore: [0, -4.5, -12],
+    adsDist: 0.3, len: 0.75 },
 };
 const realMats = {};
 function realMaterial(file, tex) {
@@ -6741,14 +6760,20 @@ function buildReal(id, js) {
   W.rh = handR(b);
   if (cfg.pistol) { W.lh = handL(b, { arm: new THREE.Vector3(0.4, -0.33, 0.45) }); W.a.fore = [new THREE.Vector3(-0.034, -0.05, 0.004), -1.5]; W.pistol = true; }
   else { W.lh = handL(b); if (!W.a.fore) W.a.fore = [at(cfg.fore), 0]; }
-  W.hip = cfg.pistol ? new THREE.Vector3(0.125, -0.135, -0.3) : new THREE.Vector3(0.155, -0.2, -0.3);
+  W.hip = cfg.pistol ? new THREE.Vector3(0.125, -0.14, -0.34) : new THREE.Vector3(0.155, -0.2, -0.3);
   W.adsDist = cfg.adsDist; W.len = cfg.len; W.real = true;
   if (cfg.noCh) W.noCh = true;
+  if (cfg.scoped) W.scoped = true;
+  if (WD[id] && WD[id].shells) {          // loose round carried from the pouch to the port during shell-by-shell reloads
+    const sh = new THREE.Group(); sh.visible = false; b.add(sh); W.p.shell = sh;
+    const big = id === 'flare';
+    C(sh, big ? 0.013 : 0.0095, big ? 0.075 : 0.06, 0, 0, 0, M3.shell, 'z', 12); C(sh, (big ? 0.0135 : 0.0098), 0.014, 0, 0, big ? 0.04 : 0.032, M3.brass, 'z', 12);
+  }
   return W;
 }
 const _ax1 = new THREE.Vector3(1, 0, 0);
 function swapViewmodel(id, W) {
-  const old = VMM[id]; W.wid = id; prepVM(id, W);
+  const old = VMM[id]; W.wid = id; prepVM(id, W); if (typeof ARMS !== 'undefined' && ARMS.ok) hideProcHands(W);
   VMM[id] = W;
   if (old && old.root.parent) old.root.parent.remove(old.root);
   // compile the new materials now so the first draw doesn't hitch
@@ -6781,7 +6806,7 @@ const REAL_SND = {
 };
 // per-weapon voice swaps and pitch so shared recordings still feel distinct
 const SND_ALIAS = { ak: { cellOut: 'akOut', cellIn: 'akIn', chargePull: 'akPull', chargeRelease: 'akRel' }, drum: { chargePull: 'akPull', chargeRelease: 'akRel' }, lmg: { chargePull: 'akPull', chargeRelease: 'akRel' } };
-const SND_RATE = { mpistol: 1.1, pistol: 1.03, smg: 1.0, drum: 0.94, deagle: 0.86, lmg: 0.93, autosg: 1.05, dmr: 1.02, rev: 1.06 };
+const SND_RATE = { scar: 0.97, mp5k: 1.07, luger: 0.95, m14: 1.08, spas: 0.95, flare: 1.25, mpistol: 1.1, pistol: 1.03, smg: 1.0, drum: 0.94, deagle: 0.86, lmg: 0.93, autosg: 1.05, dmr: 1.02, rev: 1.06 };
 const realBank = {};
 const _synthPlay = play;
 play = function (name, vol, rate, lp, idx) {
@@ -6892,6 +6917,277 @@ async function loadMerc() {
 }
 setTimeout(loadMerc, 600);
 
+// ---- CC0 first-person arms (FPS Arms Rig): skinned mesh, two-bone IK onto the viewmodel hand targets ----
+const ARMS = { ok: false, root: null, B: {}, bind: {}, off: {}, len: {}, nrm: {}, mats: [], base: new THREE.Vector3(0, -0.23, -0.22), scale: 1.04, sh: { R: new THREE.Vector3(), L: new THREE.Vector3() } };
+const ARM_CURL = {          // finger curl per joint (rad) for each hand role
+  grip: { index: [0.25, 0.55, 0.35], middle: [1.25, 1.15, 0.7], ring: [1.3, 1.15, 0.7], pinky: [1.35, 1.1, 0.7], thumb: [0.15, 0.35, 0.25] },
+  support: { index: [0.75, 0.75, 0.45], middle: [0.85, 0.8, 0.5], ring: [0.9, 0.85, 0.5], pinky: [0.95, 0.85, 0.5], thumb: [-0.4, 0.2, 0.1] },
+  open: { index: [0.15, 0.2, 0.15], middle: [0.2, 0.25, 0.15], ring: [0.25, 0.25, 0.15], pinky: [0.3, 0.25, 0.15], thumb: [0.1, 0.1, 0.1] }
+};
+const ARM_SEM = {           // where the palm sits in the procedural hand frames: palm centre, finger direction, index->pinky line
+  R: { p: [0.024, -0.042, 0.034], f: [0, 0.12, -1], k: [0, -1, 0.22] },
+  L: { p: [-0.029, -0.016, 0.006], f: [1, 0.2, -0.3], k: [0.05, 0, 1] }
+};
+const _aM = new THREE.Matrix4(), _aM2 = new THREE.Matrix4(), _aQ = new THREE.Quaternion(), _aQ2 = new THREE.Quaternion(), _aQ3 = new THREE.Quaternion();
+const _aV = new THREE.Vector3(), _aV2 = new THREE.Vector3(), _aV3 = new THREE.Vector3(), _aS = new THREE.Vector3(), _aE = new THREE.Vector3(), _aH = new THREE.Vector3();
+function frameQ(axis, n, q) { const z = _aV3.crossVectors(axis, n).normalize(); const y = _aV2.crossVectors(z, axis).normalize(); _aM.makeBasis(axis, y, z); return q.setFromRotationMatrix(_aM); }
+function parseArms(ab) {
+  const dv = new DataView(ab), jl = dv.getUint32(4, true), h = JSON.parse(new TextDecoder().decode(new Uint8Array(ab, 8, jl))); let o = 8 + jl;
+  const take = (C, n) => { const a = new C(ab, o, n); o += a.byteLength; o += (4 - o % 4) % 4; return a; };
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.BufferAttribute(take(Float32Array, h.n * 3), 3));
+  g.setAttribute('normal', new THREE.BufferAttribute(take(Int16Array, h.n * 3), 3, true));
+  g.setAttribute('uv', new THREE.BufferAttribute(take(Float32Array, h.n * 2), 2));
+  g.setAttribute('skinIndex', new THREE.Uint8BufferAttribute(take(Uint8Array, h.n * 4), 4));
+  g.setAttribute('skinWeight', new THREE.BufferAttribute(take(Uint8Array, h.n * 4), 4, true));
+  g.setIndex(new THREE.BufferAttribute(take(Uint16Array, h.ni), 1));
+  g.addGroup(0, h.glove, 0); g.addGroup(h.glove, h.ni - h.glove, 1);
+  return { g, bones: h.bones };
+}
+function buildArms(data, tex) {
+  const root = new THREE.Group(); gunScene.add(root); ARMS.root = root;
+  const list = [], wm = [];
+  data.bones.forEach((b, i) => {
+    const bone = new THREE.Bone(); bone.name = b.n; const M = new THREE.Matrix4().fromArray(b.m); wm.push(M);
+    const L = b.p >= 0 ? new THREE.Matrix4().copy(wm[b.p]).invert().multiply(M) : M.clone();
+    L.decompose(bone.position, bone.quaternion, _aV);
+    (b.p >= 0 ? list[b.p] : root).add(bone); list.push(bone); ARMS.B[b.n] = bone;
+    ARMS.bind[b.n] = { m: M, q: new THREE.Quaternion().setFromRotationMatrix(M), p: new THREE.Vector3().setFromMatrixPosition(M), lq: bone.quaternion.clone() };
+  });
+  root.updateMatrixWorld(true);
+  const glove = new THREE.MeshStandardMaterial({ map: tex, roughness: 0.72, metalness: 0.05, skinning: true, envMapIntensity: 0.3 });
+  const sleeve = new THREE.MeshStandardMaterial({ map: tex, roughness: 0.95, metalness: 0, skinning: true, envMapIntensity: 0.15 });
+  const mesh = new THREE.SkinnedMesh(data.g, [glove, sleeve]); mesh.frustumCulled = false; root.add(mesh);
+  mesh.bind(new THREE.Skeleton(list), new THREE.Matrix4());
+  ARMS.mesh = mesh; ARMS.mats = [glove, sleeve]; root.scale.setScalar(ARMS.scale);
+  for (const s of ['R', 'L']) {
+    const bp = n => ARMS.bind[n + '.' + s].p;
+    const Sh = bp('upper_arm'), El = bp('forearm'), Wr = bp('hand');
+    ARMS.len[s] = [El.distanceTo(Sh) * ARMS.scale, Wr.distanceTo(El) * ARMS.scale];
+    ARMS.nrm[s] = new THREE.Vector3().crossVectors(_aV.subVectors(El, Sh), _aV2.subVectors(Wr, El)).normalize();
+    // hand offset: procedural hand frame -> hand bone
+    const fR = new THREE.Vector3().subVectors(bp('f_middle.01'), Wr).normalize();
+    const kR = new THREE.Vector3().subVectors(bp('f_pinky.01'), bp('f_index.01')); kR.addScaledVector(fR, -kR.dot(fR)).normalize();
+    const pR = Wr.clone().lerp(bp('f_middle.01'), 0.5);
+    const semM = (f, k, p) => { const z = new THREE.Vector3().crossVectors(f, k).normalize(); return new THREE.Matrix4().makeBasis(f, k, z).setPosition(p); };
+    const A = ARM_SEM[s], fT = new THREE.Vector3(...A.f).normalize(), kT = new THREE.Vector3(...A.k); kT.addScaledVector(fT, -kT.dot(fT)).normalize();
+    ARMS.off[s] = semM(fT, kT, new THREE.Vector3(...A.p)).multiply(semM(fR, kR, pR).invert()).multiply(ARMS.bind['hand.' + s].m);
+  }
+  ARMS.ok = true;
+  for (const id in VMM) hideProcHands(VMM[id]);
+}
+function hideProcHands(W) {
+  for (const h of [W.rh, W.lh]) if (h) h.traverse(o => { if (o.isMesh) o.visible = false; });
+  if (W.arm) { W.arm.traverse(o => { if (o.isMesh) o.visible = false; }); }
+}
+function curlHand(s, role, trig) {
+  const C = ARM_CURL[role];
+  for (const f of ['index', 'middle', 'ring', 'pinky']) for (let j = 1; j <= 3; j++) {
+    const n = 'f_' + f + '.0' + j + '.' + s, b = ARMS.B[n]; if (!b) continue;
+    let a = C[f][j - 1]; if (f === 'index' && trig) a += trig * (j === 1 ? 0.35 : 0.45);
+    b.quaternion.copy(ARMS.bind[n].lq).multiply(_aQ.setFromAxisAngle(_ax1, a));
+  }
+  for (let j = 1; j <= 3; j++) { const n = 'thumb.0' + j + '.' + s, b = ARMS.B[n]; if (b) b.quaternion.copy(ARMS.bind[n].lq).multiply(_aQ.setFromAxisAngle(_ax1, C.thumb[j - 1])); }
+}
+const _armRestL = new THREE.Matrix4(), _armRestR = new THREE.Matrix4();
+function solveArm(s, T, pole) {
+  const B = ARMS.B, up = B['upper_arm.' + s], fo = B['forearm.' + s], ha = B['hand.' + s];
+  _aM2.multiplyMatrices(T, ARMS.off[s]);              // desired hand bone world
+  _aH.setFromMatrixPosition(_aM2); _aQ3.setFromRotationMatrix(_aM2);
+  up.parent.updateMatrixWorld(true); up.updateMatrixWorld(false); _aS.setFromMatrixPosition(up.matrixWorld);
+  const [a, b] = ARMS.len[s];
+  _aE.copy(twoBone(_aS, _aH, a, b, pole));
+  const bU = ARMS.bind['upper_arm.' + s], bF = ARMS.bind['forearm.' + s], bH = ARMS.bind['hand.' + s];
+  const n = _aV.crossVectors(_aV2.subVectors(_aE, _aS), _aV3.subVectors(_aH, _aE)); if (n.lengthSq() < 1e-8) n.copy(pole).cross(_aV2.subVectors(_aH, _aS)); n.normalize();
+  const nn = n.clone();
+  // upper arm world rotation
+  const restU = new THREE.Vector3().subVectors(bF.p, bU.p).normalize(), restF = new THREE.Vector3().subVectors(bH.p, bF.p).normalize();
+  const qRestU = frameQ(restU, ARMS.nrm[s], new THREE.Quaternion()), qNewU = frameQ(_aV2.subVectors(_aE, _aS).normalize().clone(), nn, new THREE.Quaternion());
+  const qU = qNewU.multiply(qRestU.invert()).multiply(bU.q);
+  const qRestF = frameQ(restF, ARMS.nrm[s], new THREE.Quaternion()), fDir = new THREE.Vector3().subVectors(_aH, _aE).normalize(), qNewF = frameQ(fDir, nn, new THREE.Quaternion());
+  const qDelta = qNewF.multiply(qRestF.invert());
+  let qF = qDelta.clone().multiply(bF.q);
+  // forearm twist: share half of the hand roll about the forearm axis (avoids candy-wrapping at the wrist)
+  const follow = qDelta.clone().multiply(bH.q), rel = _aQ3.clone().multiply(follow.invert());
+  const pr = _aV.set(rel.x, rel.y, rel.z).projectOnVector(fDir), tw = new THREE.Quaternion(pr.x, pr.y, pr.z, rel.w).normalize();
+  qF = new THREE.Quaternion().slerp(tw, 0.5).multiply(qF);
+  // world -> local
+  const pq = up.parent.getWorldQuaternion(new THREE.Quaternion());
+  up.quaternion.copy(pq.clone().invert().multiply(qU));
+  fo.quaternion.copy(qU.clone().invert().multiply(qF));
+  ha.quaternion.copy(qF.clone().invert().multiply(_aQ3));
+}
+const _poleR = new THREE.Vector3(), _poleL = new THREE.Vector3();
+function solveArms(W) {
+  if (!ARMS.ok) return;
+  const vis = W.root.visible && !(W.scoped && aimT > 0.85 && !vm.clip);
+  ARMS.root.visible = vis; if (!vis) return;
+  // shoulders lag behind the gun a little so the arms read as connected to a body
+  const k = WD[cur] && WD[cur].melee ? 0.25 : 0.45;
+  ARMS.root.position.set(ARMS.base.x + (W.root.position.x - W.hip.x) * k, ARMS.base.y + (W.root.position.y - W.hip.y) * k, ARMS.base.z + (W.root.position.z - W.hip.z) * k * 0.6);
+  ARMS.root.rotation.set(W.root.rotation.x * 0.15, W.root.rotation.y * 0.2, W.root.rotation.z * 0.25);
+  // stance: pistols pull the support shoulder in (isosceles), long guns square up
+  const pist = !!W.pistol, kS = Math.min(1, (vm._armDt || 0.016) * 10);
+  ARMS.sh.L.lerp(_aV.set(pist ? 0.12 : 0, pist ? -0.08 : 0, pist ? 0.06 : 0), kS); ARMS.sh.R.lerp(_aV.set(0, pist ? -0.05 : 0, pist ? 0.06 : 0), kS);
+  for (const s of ['R', 'L']) ARMS.B['clavicle.' + s].position.copy(ARMS.bind['clavicle.' + s].p).add(ARMS.sh[s]);
+  ARMS.root.updateMatrixWorld(true);
+  W.root.updateMatrixWorld(true);
+  _poleR.set(0.55, -1, 0.35).normalize(); _poleL.set(-0.6, -1, 0.25).normalize();
+  solveArm('R', W.rh.matrixWorld, _poleR);
+  const dt = vm._armDt || 0.016, melee = !!WD[cur].melee;
+  const thT = ARMS.thr ? throwTarget(W, dt) : null;
+  // free-hand pose (katana / pistol sprint): low by the hip, pumping with the stride
+  const wcls = WD[cur].cls, ph = bobT * 0.5, sprintFree = (wcls !== 'heavy' && wcls !== 'lmg') ? Math.max(0, Math.min(1, (sprintT - 0.3) / 0.5)) * (vm.clip ? 0 : 1) : 0;
+  ARMS.free = (ARMS.free || 0) + (((melee || sprintFree > 0) ? 1 : 0) - (ARMS.free || 0)) * Math.min(1, dt * 9);
+  if (thT) { solveArm('L', thT, _poleL); }
+  else {
+    const swingK = melee && vm.clip && vm.clip.sw ? Math.sin(Math.min(1, vm.t / Math.max(0.1, vm.clip.d)) * Math.PI) : 0;
+    if (melee) { _aV.set(-0.3 - swingK * 0.05, -0.56 + swingK * 0.06, -0.2 - swingK * 0.08); _armRestL.makeRotationFromEuler(_swEu.set(0.4, 0.3, -1.4)).setPosition(_aV.x, _aV.y, _aV.z); }
+    else {      // sprint: fist pumping in the lower-left of the frame
+      const sw = Math.sin(ph);
+      _aV.set(-0.2 + sw * 0.03, -0.38 - Math.abs(Math.cos(ph)) * 0.04 + sw * 0.05, -0.36 - sw * 0.12);
+      _armRestL.makeRotationFromEuler(_swEu.set(0.9 + sw * 0.35, 0.5, -0.9)).setPosition(_aV.x, _aV.y, _aV.z);
+    }
+    if (W.lh && W.lh.visible !== false && !melee && ARMS.free < 0.999) {
+      if (ARMS.free > 0.001) {     // blend gun hand -> free hand
+        _aV2.setFromMatrixPosition(W.lh.matrixWorld); _aQ2.setFromRotationMatrix(W.lh.matrixWorld);
+        _aV3.setFromMatrixPosition(_armRestL); _aQ.setFromRotationMatrix(_armRestL);
+        const u = easeIO(ARMS.free); _aV2.lerp(_aV3, u); _aV2.y -= Math.sin(u * Math.PI) * 0.06; _aQ2.slerp(_aQ, u);
+        solveArm('L', _thM.compose(_aV2.clone(), _aQ2.clone(), _thS), _poleL);
+      } else solveArm('L', W.lh.matrixWorld, _poleL);
+    } else solveArm('L', _armRestL, _poleL);
+  }
+  curlHand('R', 'grip', vm.trigT || 0);
+  curlHand('L', thT ? 'grip' : ARMS.free > 0.5 ? (melee ? 'open' : 'grip') : 'support', 0);
+}
+const _poseVM0 = poseVM;
+poseVM = function (dt, sprint) { _poseVM0(dt, sprint); vm._armDt = dt; try { if (ARMS.ok && vm.W) solveArms(vm.W); } catch (e) { console.warn('arms', e); ARMS.ok = false; if (ARMS.root) ARMS.root.visible = false; } };
+async function loadArms() {
+  if (typeof fetch !== 'function' || location.protocol === 'file:') return;
+  try {
+    const r = await fetch('assets/arms/arms.json'); if (!r.ok) return;
+    const data = parseArms(b64buf((await r.json()).b64));
+    const tex = await new Promise(res => new THREE.TextureLoader().load('assets/arms/arms_c.jpg', t => { t.encoding = THREE.sRGBEncoding; t.anisotropy = 4; res(t); }, undefined, () => res(null)));
+    if (!tex) return;
+    buildArms(data, tex);
+    try { renderer.compile(gunScene, gunCam); } catch (e) {}
+  } catch (e) { console.warn('arms', e); }
+}
+setTimeout(loadArms, 300);
+
+// ---- explosive models (Guns & Explosives pack): thrown grenades, GL rounds, the RL-7 payload, armoury props ----
+const PROPS = {};
+let projFlareNext = false;
+async function loadProp(id, centre) {
+  if (PROPS[id] !== undefined) return PROPS[id];
+  PROPS[id] = null;
+  try {
+    const r = await fetch('assets/guns/' + id + '.json'); if (!r.ok) return null;
+    const js = parseRealBundle(b64buf((await r.json()).b64));
+    const { root } = instantiateReal(js, realMaterial(id, js.tex));
+    root.traverse(o => { if (o.isMesh) { o.castShadow = true; o.frustumCulled = true; } });
+    const g = new THREE.Group(); g.add(root);
+    if (centre) { root.updateMatrixWorld(true); const c = new THREE.Box3().setFromObject(root).getCenter(new THREE.Vector3()); root.position.sub(c); }
+    PROPS[id] = g; return g;
+  } catch (e) { console.warn('prop', id, e); return null; }
+}
+const PROJ_MDL = { stun: ['m24', 1.25], freeze: ['smoke', 1.25], flash: ['flashbang', 1.25], gl: ['frag', 1.1], flare: ['flare_round', 1], rocket: ['nuke', 0.19] };
+const _spawnProj0 = spawnProj;
+spawnProj = function (kind, x, y, z, vx, vy, vz, owner, mult) {
+  const p = projs.find(q => !q.active); const fl = projFlareNext; projFlareNext = false;
+  _spawnProj0(kind, x, y, z, vx, vy, vz, owner, mult);
+  if (!p || !p.active) return;
+  p.mdlKey = fl ? 'flare' : kind; p.flare = fl;
+  if (p.mdls) for (const k in p.mdls) p.mdls[k].visible = false;
+  const spec = PROJ_MDL[p.mdlKey], tpl = spec && PROPS[spec[0]];
+  if (fl) { p.glowM.color.setHex(0xff3a22); p.glow.scale.setScalar(1.3); p.nade.visible = false; return; }
+  if (!tpl) return;
+  p.mdls = p.mdls || {};
+  if (!p.mdls[p.mdlKey]) { const c = tpl.clone(); c.scale.setScalar(spec[1]); p.g.add(c); p.mdls[p.mdlKey] = c; }
+  const m = p.mdls[p.mdlKey]; m.visible = true; p.nade.visible = false; p.body.visible = false;
+  m.rotation.set(Math.random() * 6, Math.random() * 6, 0); p.spin = kind === 'rocket' ? 0 : 9 + Math.random() * 6;
+};
+const _updateProjs0 = updateProjs;
+updateProjs = function (dt) {
+  _updateProjs0(dt);
+  for (const p of projs) {
+    if (!p.active || !p.mdls) continue;
+    const m = p.mdls[p.mdlKey]; if (!m || !m.visible) continue;
+    if (p.spin) { m.rotation.x += dt * p.spin; m.rotation.z += dt * p.spin * 0.4; p.spin *= Math.pow(0.35, dt); }
+  }
+};
+// armoury dressing next to the weapon chest: C4 bricks, a claymore, an AT mine, pipe bombs and a crate of molotovs
+async function dressArmoury() {
+  const set = [['c4', [0.92, 0.0, -0.18], [0, 0.4, 0], 1], ['c4', [0.98, 0.066, -0.12], [0, -0.2, 0], 1], ['pipebomb', [-0.95, 0.03, 0.2], [0, 0, Math.PI / 2], 1],
+    ['pipebomb', [-0.9, 0.03, 0.29], [0, 0.3, Math.PI / 2], 1], ['claymore', [-1.05, 0.18, -0.35], [0, 0.6, 0], 1], ['atmine', [1.05, 0.025, 0.42], [0, 0.5, 0], 1],
+    ['molotov', [-0.98, 0.1, -0.05], [0, 0, 0], 1], ['molotov', [-1.04, 0.1, 0.04], [0, 1, 0], 1], ['frag', [0.82, 0.0, 0.18], [0, 0, 0], 1], ['frag', [0.86, 0.0, 0.27], [Math.PI / 2, 0, 0.6], 1]];
+  for (const [id, pos, rot, sc] of set) {
+    const tpl = await loadProp(id, false); if (!tpl) continue;
+    const c = tpl.clone(); c.position.set(pos[0], pos[1] - CHEST_POS.y + 0.0, pos[2]); c.rotation.set(rot[0], rot[1], rot[2]); c.scale.setScalar(sc);
+    chestG.add(c);
+  }
+}
+async function loadProjModels() {
+  if (typeof fetch !== 'function' || location.protocol === 'file:') return;
+  for (const k in PROJ_MDL) { const id = PROJ_MDL[k][0]; if (id !== 'flare_round') await loadProp(id, id !== 'nuke'); }
+  try { await dressArmoury(); } catch (e) { console.warn('armoury', e); }
+}
+setTimeout(loadProjModels, 1500);
+
+// ---- first-person grenade throw: left hand leaves the gun, winds up by the shoulder, releases, follows through ----
+const THROW_KEYS = [   // t, camera-space palm position, finger direction, palm normal
+  [0.13, [-0.13, -0.07, -0.3], [0.15, 1, 0.25], [0.25, -0.05, -1]],
+  [0.2, [-0.15, -0.01, -0.25], [0.05, 0.9, -0.4], [0.15, -0.45, -1]],
+  [0.27, [-0.03, -0.02, -0.55], [0, 0.25, -1], [0, -1, -0.3]],
+  [0.4, [0.04, -0.25, -0.45], [0, -0.6, -1], [-0.2, -1, 0.3]],
+  [0.56, [-0.2, -0.5, -0.3], [0.2, 0.2, -1], [0.2, -1, 0]]
+];
+const THROW_REL = 0.24, THROW_END = 0.74;
+const _thM = new THREE.Matrix4(), _thQa = new THREE.Quaternion(), _thQb = new THREE.Quaternion(), _thPa = new THREE.Vector3(), _thPb = new THREE.Vector3(), _thX = new THREE.Vector3(), _thY = new THREE.Vector3(), _thZ = new THREE.Vector3();
+function throwKeyM(k, outP, outQ) {
+  _thX.set(...k[2]).normalize(); _thY.set(...k[3]); _thY.addScaledVector(_thX, -_thY.dot(_thX)).normalize(); _thZ.crossVectors(_thX, _thY);
+  _thM.makeBasis(_thX, _thY, _thZ); outQ.setFromRotationMatrix(_thM); outP.set(...k[1]);
+  // keys describe the palm: shift back to the procedural handL origin (palm sits ~2.6cm below it)
+  outP.addScaledVector(_thY, 0.022);
+}
+const _throwSkill0 = throwSkill;
+throwSkill = function (kind) {
+  if (!ARMS.ok || !vm.W || WD[cur].melee) return _throwSkill0(kind);
+  if (state !== 'play' || down || frozen() || skillCD[kind] > 0 || ARMS.thr) return;
+  ARMS.thr = { t: 0, kind, done: false, start: new THREE.Matrix4().copy(vm.W.lh.matrixWorld) };
+  sp.y.v -= 0.25; sp.rz.v -= 0.4; sp.rx.v -= 0.4;
+  const tpl = PROPS[(PROJ_MDL[kind] || [])[0]];
+  if (tpl) { if (!ARMS.nade || ARMS.nade.userData.k !== kind) { if (ARMS.nade) gunScene.remove(ARMS.nade); ARMS.nade = tpl.clone(); ARMS.nade.userData.k = kind; ARMS.nade.scale.setScalar(0.85); gunScene.add(ARMS.nade); ARMS.nade.traverse(o => { if (o.isMesh) { o.castShadow = false; o.frustumCulled = false; } }); } ARMS.nade.visible = false; }
+  play('swap', 0.4, 1.3);
+};
+const _thT = new THREE.Matrix4(), _thP = new THREE.Vector3(), _thQ = new THREE.Quaternion(), _thS = new THREE.Vector3(1, 1, 1);
+function throwTarget(W, dt) {
+  const th = ARMS.thr; th.t += dt;
+  if (!th.done && th.t >= THROW_REL) { th.done = true; _throwSkill0(th.kind); }
+  if (th.t >= THROW_END) { ARMS.thr = null; if (ARMS.nade) ARMS.nade.visible = false; return null; }
+  // key list with the live gun grip at both ends
+  const t = th.t, keys = THROW_KEYS;
+  if (t < keys[0][0]) {           // leave the gun
+    const u = easeIO(t / keys[0][0]); throwKeyM(keys[0], _thPb, _thQb);
+    _thPa.setFromMatrixPosition(th.start); _thQa.setFromRotationMatrix(th.start);
+    _thP.lerpVectors(_thPa, _thPb, u); _thP.y -= Math.sin(u * Math.PI) * 0.12; _thQ.copy(_thQa).slerp(_thQb, u);
+  } else if (t > keys[keys.length - 1][0]) {   // back onto the gun
+    const u = easeIO(Math.min(1, (t - keys[keys.length - 1][0]) / (THROW_END - keys[keys.length - 1][0])));
+    throwKeyM(keys[keys.length - 1], _thPa, _thQa); W.root.updateMatrixWorld(true); _thPb.setFromMatrixPosition(W.lh.matrixWorld); _thQb.setFromRotationMatrix(W.lh.matrixWorld);
+    _thP.lerpVectors(_thPa, _thPb, u); _thQ.copy(_thQa).slerp(_thQb, u);
+  } else {
+    let i = 0; while (i < keys.length - 2 && t > keys[i + 1][0]) i++;
+    const a = keys[i], b = keys[i + 1], u = (t - a[0]) / (b[0] - a[0]), e = i === 1 ? easeI(u) : i === 2 ? easeO(u) : easeIO(u);
+    throwKeyM(a, _thPa, _thQa); throwKeyM(b, _thPb, _thQb); _thP.lerpVectors(_thPa, _thPb, e); _thQ.copy(_thQa).slerp(_thQb, e);
+  }
+  // grenade rides in the palm until release
+  if (ARMS.nade) {
+    const show = t > 0.05 && !th.done; ARMS.nade.visible = show;
+    if (show) { const a = ARMS.B['f_middle.01.L'], b = ARMS.B['thumb.02.L']; a.getWorldPosition(_aV); b.getWorldPosition(_aV2); ARMS.nade.position.lerpVectors(_aV, _aV2, 0.5); ARMS.nade.quaternion.copy(_thQ); }
+  }
+  return _thT.compose(_thP, _thQ, _thS);
+}
+
 
 
 
@@ -6987,12 +7283,14 @@ function fireRocket() {
   spawnProj('rocket', o.x, o.y, o.z, vx, vy, vz, net.myId, upg.dmg); shareProj('rocket', o.x, o.y, o.z, vx, vy, vz, upg.dmg);
   sfx.rocketFire(); shake = Math.min(1, shake + 0.25);
 }
-function fireGL() {
+function fireGL(flare) {
   camera.updateMatrixWorld();
-  const d = tA.set(0, 0.06, -1).normalize().applyQuaternion(camera.quaternion);
+  const d = tA.set(0, flare ? 0.02 : 0.06, -1).normalize().applyQuaternion(camera.quaternion);
   const o = tB.copy(camera.position).addScaledVector(d, 0.8); o.y -= 0.1;
-  const sp0 = 30, vx = d.x * sp0 + vel.x * 0.3, vy = d.y * sp0 + 2.2, vz = d.z * sp0 + vel.z * 0.3;
-  spawnProj('gl', o.x, o.y, o.z, vx, vy, vz, net.myId, upg.dmg); shareProj('gl', o.x, o.y, o.z, vx, vy, vz, upg.dmg);
+  const sp0 = flare ? 46 : 30, vx = d.x * sp0 + vel.x * 0.3, vy = d.y * sp0 + (flare ? 0.8 : 2.2), vz = d.z * sp0 + vel.z * 0.3, dm = upg.dmg * (flare ? 0.7 : 1);
+  if (flare) projFlareNext = true;
+  spawnProj('gl', o.x, o.y, o.z, vx, vy, vz, net.myId, dm); shareProj('gl', o.x, o.y, o.z, vx, vy, vz, dm);
+  if (flare) emit(o.x, o.y, o.z, 1, 0.25, 0.15, 14, 3, 1.4); else
   emit(o.x, o.y, o.z, 0.8, 1, 0.5, 8, 2, 1);
 }
 function projHitsBody(p) {
@@ -7515,7 +7813,7 @@ function resetBoss() {
 
 // ---------- Weapon chest (roll for a random weapon) ----------
 const CHEST_POS = new THREE.Vector3(0, 0.3, -3.2), CHEST_COST = 300, CHEST_RANGE = 2.8;
-const CHEST_POOL = [['rifle', 10], ['ak', 12], ['smg', 12], ['drum', 10], ['shotgun', 10], ['autosg', 9], ['dmr', 9], ['sniper', 8], ['lmg', 8], ['gatling', 5], ['gl', 6], ['deagle', 9], ['revolver', 8], ['mpistol', 9], ['pistol', 4]];
+const CHEST_POOL = [['rifle', 10], ['ak', 12], ['smg', 12], ['drum', 10], ['shotgun', 10], ['autosg', 9], ['dmr', 9], ['sniper', 8], ['lmg', 8], ['gatling', 5], ['gl', 6], ['deagle', 9], ['revolver', 8], ['mpistol', 9], ['pistol', 4], ['scar', 10], ['mp5k', 11], ['m14', 8], ['spas', 9], ['luger', 8], ['flare', 6]];
 let credits = 300, chestCD = 0;
 const chest = { state: 'idle', t: 0, pick: null, shown: '', tick: 0 };
 const chestG = new THREE.Group(); chestG.position.copy(CHEST_POS); scene.add(chestG);
@@ -7552,7 +7850,7 @@ const holoC = document.createElement('canvas'); holoC.width = 512; holoC.height 
 const holoTex2 = new THREE.CanvasTexture(holoC);
 const holoLabel = new THREE.Sprite(new THREE.SpriteMaterial({ map: holoTex2, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending }));
 holoLabel.scale.set(2.6, 0.81, 1); holoLabel.position.set(0, 2.15, 0); chestG.add(holoLabel);
-const WCOL = { rifle: '#e8edf2', ak: '#e8edf2', smg: '#e8edf2', drum: '#6fd36f', pistol: '#c9d3dc', shotgun: '#6fd36f', autosg: '#6fd36f', deagle: '#6fd36f', mpistol: '#6fd36f', dmr: '#4aa8ff', revolver: '#4aa8ff', lmg: '#b07dff', sniper: '#b07dff', gl: '#ffb020', gatling: '#ffb020', blade: '#e8edf2', rocket: '#ff5a3a' };
+const WCOL = { scar: '#4aa8ff', mp5k: '#6fd36f', m14: '#b07dff', spas: '#4aa8ff', luger: '#6fd36f', flare: '#ffb020', rifle: '#e8edf2', ak: '#e8edf2', smg: '#e8edf2', drum: '#6fd36f', pistol: '#c9d3dc', shotgun: '#6fd36f', autosg: '#6fd36f', deagle: '#6fd36f', mpistol: '#6fd36f', dmr: '#4aa8ff', revolver: '#4aa8ff', lmg: '#b07dff', sniper: '#b07dff', gl: '#ffb020', gatling: '#ffb020', blade: '#e8edf2', rocket: '#ff5a3a' };
 function drawHolo(text, sub, col) {
   const key = text + '|' + sub + '|' + col; if (chest.shown === key) return; chest.shown = key;
   const g = holoC.getContext('2d'); g.clearRect(0, 0, 512, 160);
