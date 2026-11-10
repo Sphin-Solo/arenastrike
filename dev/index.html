@@ -6748,7 +6748,7 @@ function buildReal(id, js) {
 }
 const _ax1 = new THREE.Vector3(1, 0, 0);
 function swapViewmodel(id, W) {
-  const old = VMM[id]; W.wid = id; prepVM(id, W);
+  const old = VMM[id]; W.wid = id; prepVM(id, W); if (typeof ARMS !== 'undefined' && ARMS.ok) hideProcHands(W);
   VMM[id] = W;
   if (old && old.root.parent) old.root.parent.remove(old.root);
   // compile the new materials now so the first draw doesn't hitch
@@ -6891,6 +6891,139 @@ async function loadMerc() {
   } catch (err) { console.warn('merc', err); }
 }
 setTimeout(loadMerc, 600);
+
+// ---- CC0 first-person arms (FPS Arms Rig): skinned mesh, two-bone IK onto the viewmodel hand targets ----
+const ARMS = { ok: false, root: null, B: {}, bind: {}, off: {}, len: {}, nrm: {}, mats: [], base: new THREE.Vector3(0, -0.07, 0.14) };
+const ARM_CURL = {          // finger curl per joint (rad) for each hand role
+  grip: { index: [0.25, 0.55, 0.35], middle: [1.25, 1.15, 0.7], ring: [1.3, 1.15, 0.7], pinky: [1.35, 1.1, 0.7], thumb: [0.15, 0.35, 0.25] },
+  support: { index: [0.75, 0.75, 0.45], middle: [0.85, 0.8, 0.5], ring: [0.9, 0.85, 0.5], pinky: [0.95, 0.85, 0.5], thumb: [0.25, 0.3, 0.2] },
+  open: { index: [0.15, 0.2, 0.15], middle: [0.2, 0.25, 0.15], ring: [0.25, 0.25, 0.15], pinky: [0.3, 0.25, 0.15], thumb: [0.1, 0.1, 0.1] }
+};
+const ARM_SEM = {           // where the palm sits in the procedural hand frames: palm centre, finger direction, index->pinky line
+  R: { p: [0.024, -0.042, 0.034], f: [0, 0.12, -1], k: [0, -1, 0.22] },
+  L: { p: [-0.004, -0.03, 0.006], f: [1, 0.2, -0.3], k: [0.05, 0, 1] }
+};
+const _aM = new THREE.Matrix4(), _aM2 = new THREE.Matrix4(), _aQ = new THREE.Quaternion(), _aQ2 = new THREE.Quaternion(), _aQ3 = new THREE.Quaternion();
+const _aV = new THREE.Vector3(), _aV2 = new THREE.Vector3(), _aV3 = new THREE.Vector3(), _aS = new THREE.Vector3(), _aE = new THREE.Vector3(), _aH = new THREE.Vector3();
+function frameQ(axis, n, q) { const z = _aV3.crossVectors(axis, n).normalize(); const y = _aV2.crossVectors(z, axis).normalize(); _aM.makeBasis(axis, y, z); return q.setFromRotationMatrix(_aM); }
+function parseArms(ab) {
+  const dv = new DataView(ab), jl = dv.getUint32(4, true), h = JSON.parse(new TextDecoder().decode(new Uint8Array(ab, 8, jl))); let o = 8 + jl;
+  const take = (C, n) => { const a = new C(ab, o, n); o += a.byteLength; o += (4 - o % 4) % 4; return a; };
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.BufferAttribute(take(Float32Array, h.n * 3), 3));
+  g.setAttribute('normal', new THREE.BufferAttribute(take(Int16Array, h.n * 3), 3, true));
+  g.setAttribute('uv', new THREE.BufferAttribute(take(Float32Array, h.n * 2), 2));
+  g.setAttribute('skinIndex', new THREE.Uint8BufferAttribute(take(Uint8Array, h.n * 4), 4));
+  g.setAttribute('skinWeight', new THREE.BufferAttribute(take(Uint8Array, h.n * 4), 4, true));
+  g.setIndex(new THREE.BufferAttribute(take(Uint16Array, h.ni), 1));
+  g.addGroup(0, h.glove, 0); g.addGroup(h.glove, h.ni - h.glove, 1);
+  return { g, bones: h.bones };
+}
+function buildArms(data, tex) {
+  const root = new THREE.Group(); gunScene.add(root); ARMS.root = root;
+  const list = [], wm = [];
+  data.bones.forEach((b, i) => {
+    const bone = new THREE.Bone(); bone.name = b.n; const M = new THREE.Matrix4().fromArray(b.m); wm.push(M);
+    const L = b.p >= 0 ? new THREE.Matrix4().copy(wm[b.p]).invert().multiply(M) : M.clone();
+    L.decompose(bone.position, bone.quaternion, _aV);
+    (b.p >= 0 ? list[b.p] : root).add(bone); list.push(bone); ARMS.B[b.n] = bone;
+    ARMS.bind[b.n] = { m: M, q: new THREE.Quaternion().setFromRotationMatrix(M), p: new THREE.Vector3().setFromMatrixPosition(M), lq: bone.quaternion.clone() };
+  });
+  root.updateMatrixWorld(true);
+  const glove = new THREE.MeshStandardMaterial({ map: tex, roughness: 0.72, metalness: 0.05, skinning: true, envMapIntensity: 0.3 });
+  const sleeve = new THREE.MeshStandardMaterial({ map: tex, roughness: 0.95, metalness: 0, skinning: true, envMapIntensity: 0.15 });
+  const mesh = new THREE.SkinnedMesh(data.g, [glove, sleeve]); mesh.frustumCulled = false; root.add(mesh);
+  mesh.bind(new THREE.Skeleton(list), new THREE.Matrix4());
+  ARMS.mesh = mesh; ARMS.mats = [glove, sleeve];
+  for (const s of ['R', 'L']) {
+    const bp = n => ARMS.bind[n + '.' + s].p;
+    const Sh = bp('upper_arm'), El = bp('forearm'), Wr = bp('hand');
+    ARMS.len[s] = [El.distanceTo(Sh), Wr.distanceTo(El)];
+    ARMS.nrm[s] = new THREE.Vector3().crossVectors(_aV.subVectors(El, Sh), _aV2.subVectors(Wr, El)).normalize();
+    // hand offset: procedural hand frame -> hand bone
+    const fR = new THREE.Vector3().subVectors(bp('f_middle.01'), Wr).normalize();
+    const kR = new THREE.Vector3().subVectors(bp('f_pinky.01'), bp('f_index.01')); kR.addScaledVector(fR, -kR.dot(fR)).normalize();
+    const pR = Wr.clone().lerp(bp('f_middle.01'), 0.5);
+    const semM = (f, k, p) => { const z = new THREE.Vector3().crossVectors(f, k).normalize(); return new THREE.Matrix4().makeBasis(f, k, z).setPosition(p); };
+    const A = ARM_SEM[s], fT = new THREE.Vector3(...A.f).normalize(), kT = new THREE.Vector3(...A.k); kT.addScaledVector(fT, -kT.dot(fT)).normalize();
+    ARMS.off[s] = semM(fT, kT, new THREE.Vector3(...A.p)).multiply(semM(fR, kR, pR).invert()).multiply(ARMS.bind['hand.' + s].m);
+  }
+  ARMS.ok = true;
+  for (const id in VMM) hideProcHands(VMM[id]);
+}
+function hideProcHands(W) {
+  for (const h of [W.rh, W.lh]) if (h) h.traverse(o => { if (o.isMesh) o.visible = false; });
+  if (W.arm) { W.arm.traverse(o => { if (o.isMesh) o.visible = false; }); }
+}
+function curlHand(s, role, trig) {
+  const C = ARM_CURL[role];
+  for (const f of ['index', 'middle', 'ring', 'pinky']) for (let j = 1; j <= 3; j++) {
+    const n = 'f_' + f + '.0' + j + '.' + s, b = ARMS.B[n]; if (!b) continue;
+    let a = C[f][j - 1]; if (f === 'index' && trig) a += trig * (j === 1 ? 0.35 : 0.45);
+    b.quaternion.copy(ARMS.bind[n].lq).multiply(_aQ.setFromAxisAngle(_ax1, a));
+  }
+  for (let j = 1; j <= 3; j++) { const n = 'thumb.0' + j + '.' + s, b = ARMS.B[n]; if (b) b.quaternion.copy(ARMS.bind[n].lq).multiply(_aQ.setFromAxisAngle(_ax1, C.thumb[j - 1])); }
+}
+const _armRestL = new THREE.Matrix4(), _armRestR = new THREE.Matrix4();
+function solveArm(s, T, pole) {
+  const B = ARMS.B, up = B['upper_arm.' + s], fo = B['forearm.' + s], ha = B['hand.' + s];
+  _aM2.multiplyMatrices(T, ARMS.off[s]);              // desired hand bone world
+  _aH.setFromMatrixPosition(_aM2); _aQ3.setFromRotationMatrix(_aM2);
+  up.parent.updateMatrixWorld(true); up.updateMatrixWorld(false); _aS.setFromMatrixPosition(up.matrixWorld);
+  const [a, b] = ARMS.len[s];
+  _aE.copy(twoBone(_aS, _aH, a, b, pole));
+  const bU = ARMS.bind['upper_arm.' + s], bF = ARMS.bind['forearm.' + s], bH = ARMS.bind['hand.' + s];
+  const n = _aV.crossVectors(_aV2.subVectors(_aE, _aS), _aV3.subVectors(_aH, _aE)); if (n.lengthSq() < 1e-8) n.copy(pole).cross(_aV2.subVectors(_aH, _aS)); n.normalize();
+  const nn = n.clone();
+  // upper arm world rotation
+  const restU = new THREE.Vector3().subVectors(bF.p, bU.p).normalize(), restF = new THREE.Vector3().subVectors(bH.p, bF.p).normalize();
+  const qRestU = frameQ(restU, ARMS.nrm[s], new THREE.Quaternion()), qNewU = frameQ(_aV2.subVectors(_aE, _aS).normalize().clone(), nn, new THREE.Quaternion());
+  const qU = qNewU.multiply(qRestU.invert()).multiply(bU.q);
+  const qRestF = frameQ(restF, ARMS.nrm[s], new THREE.Quaternion()), fDir = new THREE.Vector3().subVectors(_aH, _aE).normalize(), qNewF = frameQ(fDir, nn, new THREE.Quaternion());
+  const qDelta = qNewF.multiply(qRestF.invert());
+  let qF = qDelta.clone().multiply(bF.q);
+  // forearm twist: share half of the hand roll about the forearm axis (avoids candy-wrapping at the wrist)
+  const follow = qDelta.clone().multiply(bH.q), rel = _aQ3.clone().multiply(follow.invert());
+  const pr = _aV.set(rel.x, rel.y, rel.z).projectOnVector(fDir), tw = new THREE.Quaternion(pr.x, pr.y, pr.z, rel.w).normalize();
+  qF = new THREE.Quaternion().slerp(tw, 0.5).multiply(qF);
+  // world -> local
+  const pq = up.parent.getWorldQuaternion(new THREE.Quaternion());
+  up.quaternion.copy(pq.clone().invert().multiply(qU));
+  fo.quaternion.copy(qU.clone().invert().multiply(qF));
+  ha.quaternion.copy(qF.clone().invert().multiply(_aQ3));
+}
+const _poleR = new THREE.Vector3(), _poleL = new THREE.Vector3();
+function solveArms(W) {
+  if (!ARMS.ok) return;
+  const vis = W.root.visible && !(W.scoped && aimT > 0.85 && !vm.clip);
+  ARMS.root.visible = vis; if (!vis) return;
+  // shoulders lag behind the gun a little so the arms read as connected to a body
+  const k = WD[cur] && WD[cur].melee ? 0.25 : 0.45;
+  ARMS.root.position.set(ARMS.base.x + (W.root.position.x - W.hip.x) * k, ARMS.base.y + (W.root.position.y - W.hip.y) * k, ARMS.base.z + (W.root.position.z - W.hip.z) * k * 0.6);
+  ARMS.root.rotation.set(W.root.rotation.x * 0.15, W.root.rotation.y * 0.2, W.root.rotation.z * 0.25);
+  ARMS.root.updateMatrixWorld(true);
+  W.root.updateMatrixWorld(true);
+  _poleR.set(0.55, -1, 0.35).normalize(); _poleL.set(-0.6, -1, 0.25).normalize();
+  solveArm('R', W.rh.matrixWorld, _poleR);
+  if (W.lh && W.lh.visible !== false && !WD[cur].melee) solveArm('L', W.lh.matrixWorld, _poleL);
+  else { _armRestL.makeRotationFromEuler(_swEu.set(0.4, 0.3, -1.4)).setPosition(-0.32, -0.62, -0.18); solveArm('L', _armRestL, _poleL); }
+  curlHand('R', WD[cur].melee ? 'grip' : 'grip', vm.trigT || 0);
+  curlHand('L', vm.clip && vm.cname === 'reload' ? 'support' : 'support', 0);
+}
+const _poseVM0 = poseVM;
+poseVM = function (dt, sprint) { _poseVM0(dt, sprint); try { if (ARMS.ok && vm.W) solveArms(vm.W); } catch (e) { console.warn('arms', e); ARMS.ok = false; if (ARMS.root) ARMS.root.visible = false; } };
+async function loadArms() {
+  if (typeof fetch !== 'function' || location.protocol === 'file:') return;
+  try {
+    const r = await fetch('assets/arms/arms.json'); if (!r.ok) return;
+    const data = parseArms(b64buf((await r.json()).b64));
+    const tex = await new Promise(res => new THREE.TextureLoader().load('assets/arms/arms_c.jpg', t => { t.encoding = THREE.sRGBEncoding; t.anisotropy = 4; res(t); }, undefined, () => res(null)));
+    if (!tex) return;
+    buildArms(data, tex);
+    try { renderer.compile(gunScene, gunCam); } catch (e) {}
+  } catch (e) { console.warn('arms', e); }
+}
+setTimeout(loadArms, 300);
 
 
 
