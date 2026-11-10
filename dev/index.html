@@ -6512,7 +6512,7 @@ function poseVM(dt, sprint) {
     if (W.pistol) { rx += 1.0 * s; ry -= 0.25 * s; rz -= 0.2 * s; py += 0.1 * s; px -= 0.02 * s; pz += 0.05 * s; }      // tac-sprint: muzzle up
     else if (w.melee) { rx += 0.25 * s; py -= 0.03 * s; }
     else if (w.cls === 'heavy' || w.cls === 'lmg') { px -= 0.07 * s; py -= 0.06 * s; pz += 0.03 * s; rx -= 0.22 * s; ry += 0.8 * s; rz += 0.35 * s; }
-    else { rx += 0.82 * s; ry -= 0.42 * s; rz -= 0.55 * s; py += 0.03 * s; px -= 0.045 * s; pz += 0.07 * s; rz += Math.sin(ph) * 0.06 * s; }   // tac-sprint: rifle up and across, support hand pumping
+    else { rx += 0.62 * s; ry -= 0.16 * s; rz -= 0.38 * s; py -= 0.085 * s; px += 0.055 * s; pz += 0.02 * s; rz += Math.sin(ph) * 0.06 * s; rx += Math.abs(Math.sin(ph)) * 0.05 * s; }   // tac-sprint: rifle up and across, support hand pumping
   }
   if (aiming !== wasAiming3) { wasAiming3 = aiming; sp.roll.v += aiming ? 0.7 : -0.4; sp.z.v += aiming ? 0.2 : 0; sp.rz.v += aiming ? -0.5 : 0.4; }
   if (w.melee) swordPose(W, px - W.hip.x, py - W.hip.y, pz - W.hip.z, rx, ry, rz);
@@ -7042,8 +7042,12 @@ function solveArms(W) {
   if (thT) { solveArm('L', thT, _poleL); }
   else {
     const swingK = melee && vm.clip && vm.clip.sw ? Math.sin(Math.min(1, vm.t / Math.max(0.1, vm.clip.d)) * Math.PI) : 0;
-    _aV.set(-0.3 + Math.sin(ph) * 0.03 * sprintT - swingK * 0.05, -0.56 + Math.abs(Math.cos(ph)) * 0.05 * sprintT + swingK * 0.06, -0.2 - Math.sin(ph) * 0.1 * sprintT - swingK * 0.08);
-    _armRestL.makeRotationFromEuler(_swEu.set(0.4 + Math.sin(ph) * 0.3 * sprintT, 0.3, -1.4)).setPosition(_aV.x, _aV.y, _aV.z);
+    if (melee) { _aV.set(-0.3 - swingK * 0.05, -0.56 + swingK * 0.06, -0.2 - swingK * 0.08); _armRestL.makeRotationFromEuler(_swEu.set(0.4, 0.3, -1.4)).setPosition(_aV.x, _aV.y, _aV.z); }
+    else {      // sprint: fist pumping in the lower-left of the frame
+      const sw = Math.sin(ph);
+      _aV.set(-0.2 + sw * 0.03, -0.38 - Math.abs(Math.cos(ph)) * 0.04 + sw * 0.05, -0.36 - sw * 0.12);
+      _armRestL.makeRotationFromEuler(_swEu.set(0.9 + sw * 0.35, 0.5, -0.9)).setPosition(_aV.x, _aV.y, _aV.z);
+    }
     if (W.lh && W.lh.visible !== false && !melee && ARMS.free < 0.999) {
       if (ARMS.free > 0.001) {     // blend gun hand -> free hand
         _aV2.setFromMatrixPosition(W.lh.matrixWorld); _aQ2.setFromRotationMatrix(W.lh.matrixWorld);
@@ -7054,7 +7058,7 @@ function solveArms(W) {
     } else solveArm('L', _armRestL, _poleL);
   }
   curlHand('R', 'grip', vm.trigT || 0);
-  curlHand('L', thT ? 'grip' : ARMS.free > 0.5 ? 'open' : 'support', 0);
+  curlHand('L', thT ? 'grip' : ARMS.free > 0.5 ? (melee ? 'open' : 'grip') : 'support', 0);
 }
 const _poseVM0 = poseVM;
 poseVM = function (dt, sprint) { _poseVM0(dt, sprint); vm._armDt = dt; try { if (ARMS.ok && vm.W) solveArms(vm.W); } catch (e) { console.warn('arms', e); ARMS.ok = false; if (ARMS.root) ARMS.root.visible = false; } };
