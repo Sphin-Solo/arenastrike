@@ -386,7 +386,7 @@
   <label>Sensitivity <input id="sens" type="range" min="0.4" max="3" step="0.05" value="1"><span id="sensv">1.00</span></label>
   <div class="loadout"><div class="skl">LOADOUT</div>
     <div class="lrow"><b>1</b><span>PRIMARY · KV-4 CARBINE</span></div><div class="lrow"><b>2</b><span>SECONDARY · P-17 PISTOL</span></div><div class="lrow"><b>3</b><span>MELEE · KATANA</span></div>
-    <small>Roll the weapon chest between rooms for 14 other firearms — primaries replace slot 1, sidearms slot 2.</small></div>
+    <small>Roll the weapon chest between rooms for 20 other firearms — primaries replace slot 1, sidearms slot 2.</small></div>
   <div class="mp"><div class="skl">CO-OP MULTIPLAYER <span id="mpTag"></span></div>
     <div id="mpRows">
       <div class="mprow"><input id="mpName" maxlength="12" placeholder="Your name" autocomplete="off"><button class="mpb" id="mpHost">HOST ROOM</button></div>
@@ -6105,17 +6105,23 @@ const WD = {
   sniper:  { name: 'LR-338 SNIPER', short: 'LR-338', slot: 'primary', mdl: mdlLR338, auto: false, bolt: true, rpm: 46, mag: 5, res: 25, dmg: [160, 400], rng: [200, 300, 1], duel: [95, 150], sh: 0.07, sa: 0, mv: 0.06, rec: { v: 0.055, h: 0.01, n: 1 }, kick: 3.4, fov: 16, scoped: 'cross', snd: 'sniper', mag3: { after: 'bolt', speed: 0.9 }, mode: 'BOLT', cls: 'sr' },
   lmg:     { name: 'MK-46 LMG', short: 'MK-46', slot: 'primary', mdl: mdlMK46, auto: true, rpm: 740, mag: 100, res: 200, dmg: [36, 100], rng: [30, 70, 0.7], duel: [20, 56], sh: 0.04, sa: 0.0055, mv: 0.05, bloom: 0.003, rec: { v: 0.0085, h: 0.006, n: 6, cl: 0.03 }, kick: 1.1, fov: 55, snd: 'lmg', lmgReload: true, mode: 'AUTO', cls: 'lmg' },
   drum:    { name: 'SK-31 DRUM SMG', short: 'SK-31', slot: 'primary', mdl: mdlVX9, auto: true, rpm: 840, mag: 71, res: 284, dmg: [23, 60], rng: [14, 38, 0.6], duel: [14, 38], sh: 0.03, sa: 0.0065, mv: 0.016, bloom: 0.003, rec: { v: 0.0062, h: 0.0042, n: 8, cl: 0.04 }, kick: 0.75, fov: 58, snd: 'smg', mag3: { speed: 0.85, after: 'ch' }, mode: 'AUTO', cls: 'smg', chCycle: true },
+  scar:    { name: 'BR-17 BATTLE RIFLE', short: 'BR-17', slot: 'primary', mdl: mdlKV4, auto: true, rpm: 610, mag: 20, res: 100, dmg: [50, 145], rng: [30, 75, 0.7], duel: [34, 98], sh: 0.036, sa: 0.0035, mv: 0.045, bloom: 0.006, rec: { v: 0.017, h: 0.007, n: 8, cl: 0.05 }, kick: 1.5, fov: 54, snd: 'dmr', mag3: { after: 'catch' }, mode: 'AUTO', cls: 'ar' },
+  mp5k:    { name: 'KP-5 COMPACT SMG', short: 'KP-5', slot: 'primary', mdl: mdlVX9, auto: true, rpm: 920, mag: 30, res: 180, dmg: [22, 58], rng: [10, 30, 0.6], duel: [13, 36], sh: 0.024, sa: 0.0065, mv: 0.012, bloom: 0.003, rec: { v: 0.0064, h: 0.0045, n: 7, cl: 0.05 }, kick: 0.65, fov: 58, snd: 'smg', mag3: { after: 'ch', speed: 1.1 }, mode: 'AUTO', cls: 'smg' },
+  m14:     { name: 'MR-14 BATTLE MARKSMAN', short: 'MR-14', slot: 'primary', mdl: mdlDM14, auto: false, rpm: 300, mag: 20, res: 80, dmg: [85, 220], rng: [60, 130, 0.85], duel: [52, 118], sh: 0.05, sa: 0.0012, mv: 0.045, rec: { v: 0.026, h: 0.007, n: 1 }, kick: 2.2, fov: 24, scoped: 'cross', snd: 'sniper', mag3: { after: 'ch' }, mode: 'SEMI', cls: 'ar', chCycle: true },
+  spas:    { name: 'SG-12 COMBAT SHOTGUN', short: 'SG-12', slot: 'primary', mdl: mdlRS12, auto: false, rpm: 210, mag: 8, res: 40, dmg: [24, 38], pellets: 9, rng: [8, 24, 0.25], duel: [10, 15], sh: 0.07, sa: 0.05, mv: 0.01, rec: { v: 0.04, h: 0.012, n: 1 }, kick: 2.8, fov: 62, snd: 'shotgun', shells: { per: 0.44 }, mode: 'SEMI', cls: 'sg' },
   gatling: { name: 'TEMPEST MINIGUN', short: 'TEMPEST', slot: 'primary', mdl: mdlTempest, auto: true, spin: true, rpm: 1500, mag: 200, res: 400, dmg: [24, 55], rng: [25, 60, 0.7], duel: [9, 22], sh: 0.045, sa: 0.03, mv: 0.02, rec: { v: 0.0035, h: 0.005, n: 3 }, kick: 0.5, fov: 72, snd: 'gat', boxReload: true, mode: 'ROTARY', cls: 'heavy' },
   gl:      { name: 'THUMPER GL', short: 'THUMPER', slot: 'primary', mdl: mdlThumper, auto: false, rpm: 110, mag: 6, res: 12, dmg: [175, 175], duel: [80, 80], sh: 0.004, sa: 0.002, rec: { v: 0.04, h: 0.01, n: 1 }, kick: 2.2, fov: 62, snd: 'gl', shells: { per: 0.5, loadSnd: 'glLoad' }, mode: 'SEMI', cls: 'heavy', proj: true },
   rocket:  { name: 'RL-7 LAUNCHER', short: 'RL-7', slot: 'special', mdl: mdlRL7, auto: false, rpm: 70, mag: 3, res: 0, dmg: [300, 300], duel: [130, 130], sh: 0.004, sa: 0.002, rec: { v: 0.05, h: 0.01, n: 1 }, kick: 2.8, fov: 60, snd: null, mode: 'ULT', cls: 'heavy', proj: true },
   pistol:  { name: 'P-17 PISTOL', short: 'P-17', slot: 'secondary', mdl: mdlP17, auto: false, rpm: 420, mag: 17, res: 85, dmg: [30, 90], rng: [15, 40, 0.6], duel: [20, 60], sh: 0.02, sa: 0.004, mv: 0.02, rec: { v: 0.016, h: 0.005, n: 1 }, kick: 0.9, fov: 62, snd: 'pistol', mag3: { drop: 'free', after: 'slide', speed: 1.15, tilt: [-0.02, 0.04, 0.02, 0.15, 0.15, 0.55] }, mode: 'SEMI', cls: 'pistol' },
   deagle:  { name: 'HC-50 HAND CANNON', short: 'HC-50', slot: 'secondary', mdl: mdlHC50, auto: false, rpm: 170, mag: 7, res: 35, dmg: [70, 210], rng: [20, 50, 0.6], duel: [45, 100], sh: 0.03, sa: 0.003, mv: 0.03, rec: { v: 0.042, h: 0.012, n: 1 }, kick: 2.2, fov: 60, snd: 'deagle', mag3: { drop: 'free', after: 'slide', tilt: [-0.02, 0.04, 0.02, 0.15, 0.15, 0.55] }, mode: 'SEMI', cls: 'pistol' },
   revolver:{ name: '.44 MAGNUM', short: '.44 MAG', slot: 'secondary', mdl: mdlMagnum, auto: false, rpm: 150, mag: 6, res: 30, dmg: [95, 280], rng: [25, 55, 0.6], duel: [45, 110], sh: 0.025, sa: 0.002, mv: 0.025, rec: { v: 0.045, h: 0.012, n: 1 }, kick: 2.4, fov: 60, snd: 'rev', revolver: true, mode: 'D/A', cls: 'pistol' },
+  luger:   { name: 'LG-08 TOGGLE PISTOL', short: 'LG-08', slot: 'secondary', mdl: mdlP17, auto: false, rpm: 380, mag: 8, res: 48, dmg: [38, 110], rng: [18, 45, 0.6], duel: [26, 72], sh: 0.02, sa: 0.003, mv: 0.02, rec: { v: 0.02, h: 0.005, n: 1 }, kick: 1.1, fov: 62, snd: 'pistol', mag3: { drop: 'free', after: 'slide', speed: 1.1, tilt: [-0.02, 0.04, 0.02, 0.15, 0.15, 0.55] }, mode: 'SEMI', cls: 'pistol' },
+  flare:   { name: 'FL-1 FLARE LAUNCHER', short: 'FL-1', slot: 'secondary', mdl: mdlP17, auto: false, rpm: 90, mag: 1, res: 12, dmg: [120, 120], duel: [60, 60], sh: 0.004, sa: 0.002, rec: { v: 0.05, h: 0.01, n: 1 }, kick: 2.4, fov: 62, snd: 'gl', shells: { per: 0.7, loadSnd: 'glLoad' }, mode: 'SINGLE', cls: 'pistol', proj: true },
   mpistol: { name: 'AP-9 MACHINE PISTOL', short: 'AP-9', slot: 'secondary', mdl: mdlAP9, auto: true, rpm: 1050, mag: 30, res: 150, dmg: [19, 50], rng: [10, 25, 0.55], duel: [11, 30], sh: 0.028, sa: 0.009, mv: 0.015, bloom: 0.004, rec: { v: 0.0075, h: 0.006, n: 5 }, kick: 0.6, fov: 62, snd: 'mpistol', mag3: { drop: 'free', after: 'slide', tilt: [-0.02, 0.04, 0.02, 0.15, 0.15, 0.55] }, mode: 'AUTO', cls: 'pistol' },
   blade:   { name: 'KATANA', short: 'KATANA', slot: 'melee', mdl: mdlSword, melee: true, rpm: 115, mag: 0, res: 0, dmg: [140, 140], duel: [55, 55], range: 3.4, fov: 75, mode: 'MELEE', cls: 'melee' },
 };
 const WEAP = WD;
-const PRIMARIES = ['rifle', 'ak', 'smg', 'drum', 'shotgun', 'autosg', 'dmr', 'sniper', 'lmg', 'gatling', 'gl'], SECONDARIES = ['pistol', 'deagle', 'revolver', 'mpistol'];
+const PRIMARIES = ['rifle', 'ak', 'smg', 'drum', 'scar', 'mp5k', 'shotgun', 'autosg', 'spas', 'dmr', 'm14', 'sniper', 'lmg', 'gatling', 'gl'], SECONDARIES = ['pistol', 'luger', 'deagle', 'revolver', 'mpistol', 'flare'];
 const WEAP_ORDER = ['rifle', 'pistol', 'blade'];
 // ---- build every viewmodel once, remember rest transforms ----
 const VMM = {};
@@ -6123,7 +6129,7 @@ for (const id in WD) { const W = WD[id].mdl(); W.wid = id; VMM[id] = W; prepVM(i
 function prepVM(id, W) {
   if (!W.sight) W.sight = new THREE.Vector3(0, 0.1, 0); if (!W.adsDist) W.adsDist = 0.2;
   if (WD[id].melee) { W.hip.set(SW_IDLE[0], SW_IDLE[1], SW_IDLE[2]); }
-  if (W.pistol) { W.hip.add(new THREE.Vector3(-0.012, 0.012, -0.05)); W.hipRot = new THREE.Vector3(0.04, 0.2, 0.08); W.adsDist = Math.max(W.adsDist, 0.42); } else if (!WD[id].melee && id !== 'gatling') W.hip.add(new THREE.Vector3(-0.02, 0.028, -0.07));
+  if (W.pistol) { W.hip.add(new THREE.Vector3(-0.012, 0.012, -0.09)); W.hipRot = new THREE.Vector3(0.04, 0.2, 0.08); W.adsDist = Math.max(W.adsDist, 0.42); } else if (!WD[id].melee && id !== 'gatling') W.hip.add(new THREE.Vector3(-0.02, 0.028, -0.07));
   W.ret = []; W.root.traverse(o => { if (o.isMesh) { o.frustumCulled = false; if (o.userData.reticle) W.ret.push(o.material); } });
   W.adsPos = new THREE.Vector3(-W.sight.x, -W.sight.y, -W.adsDist - W.sight.z);
   const parts = Object.assign({}, W.p, { mag: W.mag, spare: W.magSpare });
@@ -6382,7 +6388,7 @@ function shoot() {
   fireCD = 60 / w.rpm / upg.rate;
   if (vm.sinceShot > 0.32) { vm.shotIdx = 0; vm.sway0 = Math.random() * 6; }
   vm.sinceShot = 0;
-  if (cur === 'rocket') fireRocket(); else if (cur === 'gl') fireGL(); else fireHitscan(w);
+  if (cur === 'rocket') fireRocket(); else if (cur === 'gl' || cur === 'flare') fireGL(cur === 'flare'); else fireHitscan(w);
   recoilKick(w); vm.shotIdx++;
   vm.bloom = Math.min(0.05, vm.bloom + (w.bloom || 0.002));
   // viewmodel kick
@@ -6647,6 +6653,18 @@ const REAL_CFG = {
     pump: 'Fore_Stock', pumpHand: [0, -3.7, 0], trig: 'Trigger', adsDist: 0.34, len: 0.7 },
   pistol: { file: 'makarov', grip: [0.47, 1.6, 1.6], sight: [0.47, 6.05, 1.0], muzzle: [0.48, 4.73, -13.1], eject: [1.5, 5.2, -3.4],
     mag: 'Magazine', magFix: [0, -1.0, -8.0], slide: 'Slide', hammer: 'Hammer', trig: 'Trigger', adsDist: 0.42, len: 0.17, pistol: true },
+  luger: { file: 'luger', grip: [2.9, 1.5, 2.5], sight: [2.9, 6.9, 3.0], muzzle: [2.9, 5.6, -17.6], eject: [2.9, 7.0, -1.0],
+    mag: 'Clip', slide: 'Slide', trig: 'Trigger', adsDist: 0.42, len: 0.2, pistol: true },
+  flare: { file: 'flare', grip: [0, 0.5, 3.5], sight: [0, 4.4, 0], muzzle: [0, 1.8, -13.5], eject: [0, 3, 0], port: [0, 2.2, -1],
+    trig: 'Trigger', hammer: 'Hammer', adsDist: 0.42, len: 0.2, pistol: true },
+  scar: { file: 'scar', grip: [0, -1.5, 14], optic: { y: 11.6, z: 10, rail: 8.5 }, muzzle: [0, 4.0, -52.5], eject: [1.5, 3.5, 2], fore: [0, -0.5, -14],
+    mag: 'Magazine', chAnchor: [-1.5, 5.5, -4], boltCatch: [-1.2, -1, 4], adsDist: 0.26, len: 0.7 },
+  mp5k: { file: 'mp5k', grip: [0, 0.5, 9.5], optic: { y: 11.2, z: 3, rail: 8.6 }, muzzle: [0, 5.8, -16.8], eject: [1.5, 6, -2], fore: [0, -2.8, -10],
+    mag: 'Magazine', chAnchor: [-1.5, 7, -12], adsDist: 0.22, len: 0.35 },
+  m14: { file: 'm14', grip: [0, -3, 20], sight: [0, 7.6, 18], scoped: true, muzzle: [0, 0.2, -60.5], eject: [1.5, 1.5, 5], fore: [0, -4.5, -14],
+    mag: 'Magazine', chAnchor: [2.5, 1, 0], adsDist: 0.3, len: 0.8 },
+  spas: { file: 'spas', grip: [0, -1, 37], sight: [0, 6.6, 15], hide: ['Stock'], muzzle: [0, 3.6, -34.5], eject: [1.5, 2.5, 18], port: [0, -3, 22], fore: [0, -4.5, -12],
+    adsDist: 0.3, len: 0.75 },
 };
 const realMats = {};
 function realMaterial(file, tex) {
@@ -6741,9 +6759,15 @@ function buildReal(id, js) {
   W.rh = handR(b);
   if (cfg.pistol) { W.lh = handL(b, { arm: new THREE.Vector3(0.4, -0.33, 0.45) }); W.a.fore = [new THREE.Vector3(-0.034, -0.05, 0.004), -1.5]; W.pistol = true; }
   else { W.lh = handL(b); if (!W.a.fore) W.a.fore = [at(cfg.fore), 0]; }
-  W.hip = cfg.pistol ? new THREE.Vector3(0.125, -0.135, -0.3) : new THREE.Vector3(0.155, -0.2, -0.3);
+  W.hip = cfg.pistol ? new THREE.Vector3(0.125, -0.14, -0.34) : new THREE.Vector3(0.155, -0.2, -0.3);
   W.adsDist = cfg.adsDist; W.len = cfg.len; W.real = true;
   if (cfg.noCh) W.noCh = true;
+  if (cfg.scoped) W.scoped = true;
+  if (WD[id] && WD[id].shells) {          // loose round carried from the pouch to the port during shell-by-shell reloads
+    const sh = new THREE.Group(); sh.visible = false; b.add(sh); W.p.shell = sh;
+    const big = id === 'flare';
+    C(sh, big ? 0.013 : 0.0095, big ? 0.075 : 0.06, 0, 0, 0, M3.shell, 'z', 12); C(sh, (big ? 0.0135 : 0.0098), 0.014, 0, 0, big ? 0.04 : 0.032, M3.brass, 'z', 12);
+  }
   return W;
 }
 const _ax1 = new THREE.Vector3(1, 0, 0);
@@ -6781,7 +6805,7 @@ const REAL_SND = {
 };
 // per-weapon voice swaps and pitch so shared recordings still feel distinct
 const SND_ALIAS = { ak: { cellOut: 'akOut', cellIn: 'akIn', chargePull: 'akPull', chargeRelease: 'akRel' }, drum: { chargePull: 'akPull', chargeRelease: 'akRel' }, lmg: { chargePull: 'akPull', chargeRelease: 'akRel' } };
-const SND_RATE = { mpistol: 1.1, pistol: 1.03, smg: 1.0, drum: 0.94, deagle: 0.86, lmg: 0.93, autosg: 1.05, dmr: 1.02, rev: 1.06 };
+const SND_RATE = { scar: 0.97, mp5k: 1.07, luger: 0.95, m14: 1.08, spas: 0.95, flare: 1.25, mpistol: 1.1, pistol: 1.03, smg: 1.0, drum: 0.94, deagle: 0.86, lmg: 0.93, autosg: 1.05, dmr: 1.02, rev: 1.06 };
 const realBank = {};
 const _synthPlay = play;
 play = function (name, vol, rate, lp, idx) {
@@ -6893,15 +6917,15 @@ async function loadMerc() {
 setTimeout(loadMerc, 600);
 
 // ---- CC0 first-person arms (FPS Arms Rig): skinned mesh, two-bone IK onto the viewmodel hand targets ----
-const ARMS = { ok: false, root: null, B: {}, bind: {}, off: {}, len: {}, nrm: {}, mats: [], base: new THREE.Vector3(0, -0.07, 0.14) };
+const ARMS = { ok: false, root: null, B: {}, bind: {}, off: {}, len: {}, nrm: {}, mats: [], base: new THREE.Vector3(0, -0.23, -0.22), scale: 1.04, sh: { R: new THREE.Vector3(), L: new THREE.Vector3() } };
 const ARM_CURL = {          // finger curl per joint (rad) for each hand role
   grip: { index: [0.25, 0.55, 0.35], middle: [1.25, 1.15, 0.7], ring: [1.3, 1.15, 0.7], pinky: [1.35, 1.1, 0.7], thumb: [0.15, 0.35, 0.25] },
-  support: { index: [0.75, 0.75, 0.45], middle: [0.85, 0.8, 0.5], ring: [0.9, 0.85, 0.5], pinky: [0.95, 0.85, 0.5], thumb: [0.25, 0.3, 0.2] },
+  support: { index: [0.75, 0.75, 0.45], middle: [0.85, 0.8, 0.5], ring: [0.9, 0.85, 0.5], pinky: [0.95, 0.85, 0.5], thumb: [-0.4, 0.2, 0.1] },
   open: { index: [0.15, 0.2, 0.15], middle: [0.2, 0.25, 0.15], ring: [0.25, 0.25, 0.15], pinky: [0.3, 0.25, 0.15], thumb: [0.1, 0.1, 0.1] }
 };
 const ARM_SEM = {           // where the palm sits in the procedural hand frames: palm centre, finger direction, index->pinky line
   R: { p: [0.024, -0.042, 0.034], f: [0, 0.12, -1], k: [0, -1, 0.22] },
-  L: { p: [-0.004, -0.03, 0.006], f: [1, 0.2, -0.3], k: [0.05, 0, 1] }
+  L: { p: [-0.029, -0.016, 0.006], f: [1, 0.2, -0.3], k: [0.05, 0, 1] }
 };
 const _aM = new THREE.Matrix4(), _aM2 = new THREE.Matrix4(), _aQ = new THREE.Quaternion(), _aQ2 = new THREE.Quaternion(), _aQ3 = new THREE.Quaternion();
 const _aV = new THREE.Vector3(), _aV2 = new THREE.Vector3(), _aV3 = new THREE.Vector3(), _aS = new THREE.Vector3(), _aE = new THREE.Vector3(), _aH = new THREE.Vector3();
@@ -6934,11 +6958,11 @@ function buildArms(data, tex) {
   const sleeve = new THREE.MeshStandardMaterial({ map: tex, roughness: 0.95, metalness: 0, skinning: true, envMapIntensity: 0.15 });
   const mesh = new THREE.SkinnedMesh(data.g, [glove, sleeve]); mesh.frustumCulled = false; root.add(mesh);
   mesh.bind(new THREE.Skeleton(list), new THREE.Matrix4());
-  ARMS.mesh = mesh; ARMS.mats = [glove, sleeve];
+  ARMS.mesh = mesh; ARMS.mats = [glove, sleeve]; root.scale.setScalar(ARMS.scale);
   for (const s of ['R', 'L']) {
     const bp = n => ARMS.bind[n + '.' + s].p;
     const Sh = bp('upper_arm'), El = bp('forearm'), Wr = bp('hand');
-    ARMS.len[s] = [El.distanceTo(Sh), Wr.distanceTo(El)];
+    ARMS.len[s] = [El.distanceTo(Sh) * ARMS.scale, Wr.distanceTo(El) * ARMS.scale];
     ARMS.nrm[s] = new THREE.Vector3().crossVectors(_aV.subVectors(El, Sh), _aV2.subVectors(Wr, El)).normalize();
     // hand offset: procedural hand frame -> hand bone
     const fR = new THREE.Vector3().subVectors(bp('f_middle.01'), Wr).normalize();
@@ -7001,6 +7025,10 @@ function solveArms(W) {
   const k = WD[cur] && WD[cur].melee ? 0.25 : 0.45;
   ARMS.root.position.set(ARMS.base.x + (W.root.position.x - W.hip.x) * k, ARMS.base.y + (W.root.position.y - W.hip.y) * k, ARMS.base.z + (W.root.position.z - W.hip.z) * k * 0.6);
   ARMS.root.rotation.set(W.root.rotation.x * 0.15, W.root.rotation.y * 0.2, W.root.rotation.z * 0.25);
+  // stance: pistols pull the support shoulder in (isosceles), long guns square up
+  const pist = !!W.pistol, kS = Math.min(1, (vm._armDt || 0.016) * 10);
+  ARMS.sh.L.lerp(_aV.set(pist ? 0.12 : 0, pist ? -0.08 : 0, pist ? 0.06 : 0), kS); ARMS.sh.R.lerp(_aV.set(0, pist ? -0.05 : 0, pist ? 0.06 : 0), kS);
+  for (const s of ['R', 'L']) ARMS.B['clavicle.' + s].position.copy(ARMS.bind['clavicle.' + s].p).add(ARMS.sh[s]);
   ARMS.root.updateMatrixWorld(true);
   W.root.updateMatrixWorld(true);
   _poleR.set(0.55, -1, 0.35).normalize(); _poleL.set(-0.6, -1, 0.25).normalize();
@@ -7011,7 +7039,7 @@ function solveArms(W) {
   curlHand('L', vm.clip && vm.cname === 'reload' ? 'support' : 'support', 0);
 }
 const _poseVM0 = poseVM;
-poseVM = function (dt, sprint) { _poseVM0(dt, sprint); try { if (ARMS.ok && vm.W) solveArms(vm.W); } catch (e) { console.warn('arms', e); ARMS.ok = false; if (ARMS.root) ARMS.root.visible = false; } };
+poseVM = function (dt, sprint) { _poseVM0(dt, sprint); vm._armDt = dt; try { if (ARMS.ok && vm.W) solveArms(vm.W); } catch (e) { console.warn('arms', e); ARMS.ok = false; if (ARMS.root) ARMS.root.visible = false; } };
 async function loadArms() {
   if (typeof fetch !== 'function' || location.protocol === 'file:') return;
   try {
@@ -7120,12 +7148,13 @@ function fireRocket() {
   spawnProj('rocket', o.x, o.y, o.z, vx, vy, vz, net.myId, upg.dmg); shareProj('rocket', o.x, o.y, o.z, vx, vy, vz, upg.dmg);
   sfx.rocketFire(); shake = Math.min(1, shake + 0.25);
 }
-function fireGL() {
+function fireGL(flare) {
   camera.updateMatrixWorld();
-  const d = tA.set(0, 0.06, -1).normalize().applyQuaternion(camera.quaternion);
+  const d = tA.set(0, flare ? 0.02 : 0.06, -1).normalize().applyQuaternion(camera.quaternion);
   const o = tB.copy(camera.position).addScaledVector(d, 0.8); o.y -= 0.1;
-  const sp0 = 30, vx = d.x * sp0 + vel.x * 0.3, vy = d.y * sp0 + 2.2, vz = d.z * sp0 + vel.z * 0.3;
-  spawnProj('gl', o.x, o.y, o.z, vx, vy, vz, net.myId, upg.dmg); shareProj('gl', o.x, o.y, o.z, vx, vy, vz, upg.dmg);
+  const sp0 = flare ? 46 : 30, vx = d.x * sp0 + vel.x * 0.3, vy = d.y * sp0 + (flare ? 0.8 : 2.2), vz = d.z * sp0 + vel.z * 0.3, dm = upg.dmg * (flare ? 0.7 : 1);
+  spawnProj('gl', o.x, o.y, o.z, vx, vy, vz, net.myId, dm); shareProj('gl', o.x, o.y, o.z, vx, vy, vz, dm);
+  if (flare) emit(o.x, o.y, o.z, 1, 0.25, 0.15, 14, 3, 1.4); else
   emit(o.x, o.y, o.z, 0.8, 1, 0.5, 8, 2, 1);
 }
 function projHitsBody(p) {
@@ -7648,7 +7677,7 @@ function resetBoss() {
 
 // ---------- Weapon chest (roll for a random weapon) ----------
 const CHEST_POS = new THREE.Vector3(0, 0.3, -3.2), CHEST_COST = 300, CHEST_RANGE = 2.8;
-const CHEST_POOL = [['rifle', 10], ['ak', 12], ['smg', 12], ['drum', 10], ['shotgun', 10], ['autosg', 9], ['dmr', 9], ['sniper', 8], ['lmg', 8], ['gatling', 5], ['gl', 6], ['deagle', 9], ['revolver', 8], ['mpistol', 9], ['pistol', 4]];
+const CHEST_POOL = [['rifle', 10], ['ak', 12], ['smg', 12], ['drum', 10], ['shotgun', 10], ['autosg', 9], ['dmr', 9], ['sniper', 8], ['lmg', 8], ['gatling', 5], ['gl', 6], ['deagle', 9], ['revolver', 8], ['mpistol', 9], ['pistol', 4], ['scar', 10], ['mp5k', 11], ['m14', 8], ['spas', 9], ['luger', 8], ['flare', 6]];
 let credits = 300, chestCD = 0;
 const chest = { state: 'idle', t: 0, pick: null, shown: '', tick: 0 };
 const chestG = new THREE.Group(); chestG.position.copy(CHEST_POS); scene.add(chestG);
@@ -7685,7 +7714,7 @@ const holoC = document.createElement('canvas'); holoC.width = 512; holoC.height 
 const holoTex2 = new THREE.CanvasTexture(holoC);
 const holoLabel = new THREE.Sprite(new THREE.SpriteMaterial({ map: holoTex2, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending }));
 holoLabel.scale.set(2.6, 0.81, 1); holoLabel.position.set(0, 2.15, 0); chestG.add(holoLabel);
-const WCOL = { rifle: '#e8edf2', ak: '#e8edf2', smg: '#e8edf2', drum: '#6fd36f', pistol: '#c9d3dc', shotgun: '#6fd36f', autosg: '#6fd36f', deagle: '#6fd36f', mpistol: '#6fd36f', dmr: '#4aa8ff', revolver: '#4aa8ff', lmg: '#b07dff', sniper: '#b07dff', gl: '#ffb020', gatling: '#ffb020', blade: '#e8edf2', rocket: '#ff5a3a' };
+const WCOL = { scar: '#4aa8ff', mp5k: '#6fd36f', m14: '#b07dff', spas: '#4aa8ff', luger: '#6fd36f', flare: '#ffb020', rifle: '#e8edf2', ak: '#e8edf2', smg: '#e8edf2', drum: '#6fd36f', pistol: '#c9d3dc', shotgun: '#6fd36f', autosg: '#6fd36f', deagle: '#6fd36f', mpistol: '#6fd36f', dmr: '#4aa8ff', revolver: '#4aa8ff', lmg: '#b07dff', sniper: '#b07dff', gl: '#ffb020', gatling: '#ffb020', blade: '#e8edf2', rocket: '#ff5a3a' };
 function drawHolo(text, sub, col) {
   const key = text + '|' + sub + '|' + col; if (chest.shown === key) return; chest.shown = key;
   const g = holoC.getContext('2d'); g.clearRect(0, 0, 512, 160);
