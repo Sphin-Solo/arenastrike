@@ -5942,7 +5942,7 @@ function clipMag(W, o, empty) {
   const after = empty ? (pre ? 'slapH' : o.after) : null;
   if (after === 'catch') {
     tr.lh.push([T(t + 0.14), 'boltCatch', 0, 0.01, 0], [T(t + 0.2), 'boltCatch', 0.008, 0.0, 0]);
-    ev.push([T(t + 0.19), 'chargeRelease'], [T(t + 0.2), 'jolt']);
+    ev.push([T(t + 0.19), 'catchRel'], [T(t + 0.2), 'jolt']);
     t += 0.24;
   } else if (after === 'ch') {
     tr.lh.push([T(t + 0.2), 'ch', 0, 0.01, -0.01, 0, 0, -0.4], [T(t + 0.32), 'ch', 0, 0.01, 0.09, 0, 0, -0.4, 'o'], [T(t + 0.36), 'ch', 0, 0.02, 0.09, 0, 0, -0.4]);
@@ -6213,7 +6213,8 @@ function clipEvent(a) {
     case 'cutL': sp.roll.v += 2.2; sp.ry.v -= 1.0; shake = Math.min(1, shake + 0.04); break;
     case 'cutO': sp.land.v -= 0.4; sp.rx.v -= 1.4; shake = Math.min(1, shake + 0.05); break;
     case 'meleeHit': meleeHit(); break;
-    case 'pumpBack': play('pump', 0.85, 1.05); break; case 'pumpFwd': break;
+    case 'pumpBack': play('pump', 0.85, 1.05); break; case 'pumpFwd': if (realBank.pumpF) play('pumpF', 0.85); break;
+    case 'catchRel': play(realBank.catchRel ? 'catchRel' : 'chargeRelease', 0.9); break;
     case 'boltOpen': play('boltOpen', 0.9); break; case 'boltClose': play('boltClose', 0.9); break;
     case 'gatUp': play('gatUp', 0.4, 1.3); break;
     case 'magOut': play('cellOut', 0.85, R(0.97, 1.03)); break;
@@ -6396,7 +6397,7 @@ function shoot() {
   flashLight.intensity = 2.6 * Math.min(2, k); gunFlashLight.intensity = 2.4;
   if (W.muzzle) { const mw = muzzleWorld(_mz); puffSmoke(mw, _p0.set(0, 0, -1).applyQuaternion(camera.quaternion), w.pellets ? 3 : 1, w.pellets ? 0.6 : 0.35); }
   // parts + sound
-  if (w.snd) play(w.snd, w.snd === 'gat' ? 0.55 : 0.95, R(0.97, 1.03));
+  if (w.snd) play(w.snd, w.snd === 'gat' ? 0.55 : 0.95, R(0.97, 1.03) * (SND_RATE[cur] || 1));
   if (W.p.slide) { vm.slideT = 1; if (ammo === 0) vm.slideLock = true; }
   if (W.p.carrier) vm.carT = 1;
   if (w.chCycle && W.p.ch) vm.chT = 1;
@@ -6765,6 +6766,45 @@ async function loadRealGuns() {
   }
 }
 setTimeout(loadRealGuns, 200);
+
+// ---- recorded CC0 sounds (Snake's Authentic Gun Sounds). Synth bank stays as fallback. ----
+const REAL_SND = {
+  shot: ['s556'], ak: ['s762'], smg: ['s9mm'], mpistol: ['s9mm'], pistol: ['s9mm'], shotgun: ['s20g'], autosg: ['s20g'],
+  dmr: ['s54r'], lmg: ['s54r'], sniper: ['s308'], deagle: ['s54r'], rev: ['s308'], eshot: ['s762', 's556'],
+  cellOut: ['mOut'], cellIn: ['mIn'], chargePull: ['chPull'], chargeRelease: ['chRel'], catchRel: ['boltRel'],
+  pump: ['pumpB'], pumpF: ['pumpF'], shellIn: ['shell'], boltOpen: ['bOpen'], boltClose: ['bClose'],
+  pMagOut: ['pOut'], pMagIn: ['pIn'], slide: ['pSlide'], slidePull: ['pPull'], empty: ['dry'],
+  revOpen: ['rOpen'], revEject: ['rEject'], revLoad: ['rLoad'], revClose: ['rClose'],
+  akOut: ['akOut'], akIn: ['akIn'], akPull: ['akPull'], akRel: ['akRel'], bipod: ['bipod']
+};
+// per-weapon voice swaps and pitch so shared recordings still feel distinct
+const SND_ALIAS = { ak: { cellOut: 'akOut', cellIn: 'akIn', chargePull: 'akPull', chargeRelease: 'akRel' }, drum: { chargePull: 'akPull', chargeRelease: 'akRel' }, lmg: { chargePull: 'akPull', chargeRelease: 'akRel' } };
+const SND_RATE = { mpistol: 1.1, pistol: 1.03, smg: 1.0, drum: 0.94, deagle: 0.86, lmg: 0.93, autosg: 1.05, dmr: 1.02, rev: 1.06 };
+const realBank = {};
+const _synthPlay = play;
+play = function (name, vol, rate, lp, idx) {
+  const al = SND_ALIAS[cur]; if (al && al[name] && realBank[al[name]]) name = al[name];
+  const rb = realBank[name];
+  if (rb && actx) {
+    const buf = rb[(Math.random() * rb.length) | 0], s = actx.createBufferSource(); s.buffer = buf; s.playbackRate.value = rate || 1;
+    let n = s; if (lp) { const f = actx.createBiquadFilter(); f.type = 'lowpass'; f.frequency.value = lp; s.connect(f); n = f; }
+    const g = actx.createGain(); g.gain.value = (vol == null ? 1 : vol) * (REAL_GAIN[name] || 1); n.connect(g); g.connect(master); s.start(); return;
+  }
+  return _synthPlay(name, vol, rate, lp, idx);
+};
+const REAL_GAIN = { shot: 0.9, ak: 0.95, smg: 0.8, mpistol: 0.75, pistol: 0.8, shotgun: 1, autosg: 0.9, dmr: 0.95, lmg: 0.9, sniper: 1, deagle: 1, rev: 1, eshot: 0.8,
+  cellOut: 1.1, cellIn: 1.1, akOut: 1.1, akIn: 1.1, pMagOut: 1.3, pMagIn: 1.1, shellIn: 1.2, empty: 1.2 };
+async function loadRealSounds() {
+  if (typeof fetch !== 'function' || location.protocol === 'file:' || !OAC) return;
+  const dec = new OAC(2, 1, 44100), cache = {};
+  const get = f => cache[f] || (cache[f] = fetch('assets/snd/' + f + '.mp3').then(r => r.ok ? r.arrayBuffer() : null)
+    .then(ab => ab && new Promise((res, rej) => dec.decodeAudioData(ab, res, rej))).catch(() => null));
+  for (const k in REAL_SND) {
+    const bufs = (await Promise.all(REAL_SND[k].map(get))).filter(Boolean);
+    if (bufs.length) realBank[k] = bufs;
+  }
+}
+setTimeout(loadRealSounds, 400);
 
 
 
