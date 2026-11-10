@@ -6755,13 +6755,14 @@ function swapViewmodel(id, W) {
   const vis = W.root.visible; W.root.visible = true; try { renderer.compile(gunScene, gunCam); } catch (e) {} W.root.visible = vis;
   if (cur === id && !vm.sw) { const c = vm.clip; showModel(id); if (c) stopClip(); }
 }
+function b64buf(s) { const bin = atob(s), u = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) u[i] = bin.charCodeAt(i); return u.buffer; }
 async function loadRealGuns() {
   if (typeof fetch !== 'function' || location.protocol === 'file:') return;
   for (const id in REAL_CFG) {
     if (!WD[id]) continue;
     try {
-      const r = await fetch('assets/guns/' + REAL_CFG[id].file + '.bin'); if (!r.ok) continue;
-      const js = parseRealBundle(await r.arrayBuffer());
+      const r = await fetch('assets/guns/' + REAL_CFG[id].file + '.json'); if (!r.ok) continue;
+      const js = parseRealBundle(b64buf((await r.json()).b64));
       swapViewmodel(id, buildReal(id, js));
     } catch (e) { console.warn('real gun', id, e); }
   }
@@ -6879,8 +6880,8 @@ applyKind = function (e, ki) { const K = _applyKind0(e, ki); if (e.mercMat && ME
 async function loadMerc() {
   if (typeof fetch !== 'function' || location.protocol === 'file:') return;
   try {
-    const r = await fetch('assets/enemy/merc.bin'); if (!r.ok) return;
-    const ab = await r.arrayBuffer();
+    const r = await fetch('assets/enemy/merc.json'); if (!r.ok) return;
+    const ab = b64buf((await r.json()).b64);
     const tl = new THREE.TextureLoader();
     MERC.tex = await Promise.all([1, 2, 3, 4].map(i => new Promise(res => tl.load('assets/enemy/merc' + i + '.jpg', t => { t.encoding = THREE.sRGBEncoding; t.flipY = false; t.anisotropy = 4; res(t); }, undefined, () => res(null)))));
     MERC.tex = MERC.tex.filter(Boolean); if (!MERC.tex.length) return;
