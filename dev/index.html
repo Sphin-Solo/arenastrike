@@ -4543,7 +4543,7 @@ function updateHUD(dt) {
   }
   if (hud.w !== cur) { hud.w = cur; el.wname.textContent = w.name; el.wmode.textContent = w.mode; }
   const sh = loadout.primary + loadout.secondary + loadout.special + curSlot; if (hud.slots !== sh) { hud.slots = sh; el.slots.innerHTML = slotsHTML(); }
-  const rt = reloading ? 'RELOADING' : (!w.melee && ammo === 0 ? (res > 0 ? 'RELOAD  [R]' : 'NO AMMO') : (!w.melee && ammo <= Math.ceil(w.mag * 0.25) && res > 0 ? 'LOW AMMO' : ''));
+  const rt = reloading ? 'RELOADING' : (!w.melee && ammo === 0 ? (res > 0 ? 'RELOAD  [R]' : 'NO AMMO') : (!w.melee && w.mag > 2 && ammo <= Math.ceil(w.mag * 0.25) && res > 0 ? 'LOW AMMO' : ''));
   if (hud.reload !== rt) { hud.reload = rt; el.reload.textContent = rt; el.reload.className = rt === 'LOW AMMO' ? 'lo' : rt ? 'on' : ''; }
   // crosshair: gap follows the real bullet spread (CS style)
   const spr = w.melee ? 0.01 : currentSpread(w);
@@ -6511,7 +6511,8 @@ function poseVM(dt, sprint) {
     px += Math.sin(ph) * 0.024 * s; py -= Math.abs(Math.sin(ph)) * 0.02 * s;
     if (W.pistol) { rx += 1.0 * s; ry -= 0.25 * s; rz -= 0.2 * s; py += 0.1 * s; px -= 0.02 * s; pz += 0.05 * s; }      // tac-sprint: muzzle up
     else if (w.melee) { rx += 0.25 * s; py -= 0.03 * s; }
-    else { px -= 0.07 * s; py -= 0.06 * s; pz += 0.03 * s; rx -= 0.22 * s; ry += 0.8 * s; rz += 0.35 * s; }
+    else if (w.cls === 'heavy' || w.cls === 'lmg') { px -= 0.07 * s; py -= 0.06 * s; pz += 0.03 * s; rx -= 0.22 * s; ry += 0.8 * s; rz += 0.35 * s; }
+    else { rx += 0.82 * s; ry -= 0.42 * s; rz -= 0.55 * s; py += 0.03 * s; px -= 0.045 * s; pz += 0.07 * s; rz += Math.sin(ph) * 0.06 * s; }   // tac-sprint: rifle up and across, support hand pumping
   }
   if (aiming !== wasAiming3) { wasAiming3 = aiming; sp.roll.v += aiming ? 0.7 : -0.4; sp.z.v += aiming ? 0.2 : 0; sp.rz.v += aiming ? -0.5 : 0.4; }
   if (w.melee) swordPose(W, px - W.hip.x, py - W.hip.y, pz - W.hip.z, rx, ry, rz);
@@ -6659,7 +6660,7 @@ const REAL_CFG = {
     trig: 'Trigger', hammer: 'Hammer', adsDist: 0.42, len: 0.2, pistol: true },
   scar: { file: 'scar', grip: [0, -1.5, 14], optic: { y: 11.6, z: 10, rail: 8.5 }, muzzle: [0, 4.0, -52.5], eject: [1.5, 3.5, 2], fore: [0, -0.5, -14],
     mag: 'Magazine', chAnchor: [-1.5, 5.5, -4], boltCatch: [-1.2, -1, 4], adsDist: 0.26, len: 0.7 },
-  mp5k: { file: 'mp5k', grip: [0, 0.5, 9.5], optic: { y: 11.2, z: 3, rail: 8.6 }, muzzle: [0, 5.8, -16.8], eject: [1.5, 6, -2], fore: [0, -2.8, -10],
+  mp5k: { file: 'mp5k', grip: [0, 0.5, 9.5], optic: { y: 11.2, z: 3, rail: 8.6 }, muzzle: [0, 5.8, -16.8], eject: [1.5, 6, -2], fore: [0, 0.6, -5.5],
     mag: 'Magazine', chAnchor: [-1.5, 7, -12], adsDist: 0.22, len: 0.35 },
   m14: { file: 'm14', grip: [0, -3, 20], sight: [0, 7.6, 18], scoped: true, muzzle: [0, 0.2, -60.5], eject: [1.5, 1.5, 5], fore: [0, -4.5, -14],
     mag: 'Magazine', chAnchor: [2.5, 1, 0], adsDist: 0.3, len: 0.8 },
@@ -7036,7 +7037,7 @@ function solveArms(W) {
   const dt = vm._armDt || 0.016, melee = !!WD[cur].melee;
   const thT = ARMS.thr ? throwTarget(W, dt) : null;
   // free-hand pose (katana / pistol sprint): low by the hip, pumping with the stride
-  const ph = bobT * 0.5, sprintFree = W.pistol ? Math.max(0, Math.min(1, (sprintT - 0.3) / 0.5)) * (vm.clip ? 0 : 1) : 0;
+  const wcls = WD[cur].cls, ph = bobT * 0.5, sprintFree = (wcls !== 'heavy' && wcls !== 'lmg') ? Math.max(0, Math.min(1, (sprintT - 0.3) / 0.5)) * (vm.clip ? 0 : 1) : 0;
   ARMS.free = (ARMS.free || 0) + (((melee || sprintFree > 0) ? 1 : 0) - (ARMS.free || 0)) * Math.min(1, dt * 9);
   if (thT) { solveArm('L', thT, _poleL); }
   else {
@@ -7131,11 +7132,11 @@ setTimeout(loadProjModels, 1500);
 
 // ---- first-person grenade throw: left hand leaves the gun, winds up by the shoulder, releases, follows through ----
 const THROW_KEYS = [   // t, camera-space palm position, finger direction, palm normal
-  [0.13, [-0.2, -0.1, -0.16], [0.15, 1, 0.25], [0.25, -0.05, -1]],
-  [0.2, [-0.13, -0.02, -0.26], [0.05, 0.9, -0.4], [0.15, -0.45, -1]],
-  [0.27, [-0.02, -0.05, -0.52], [0, 0.25, -1], [0, -1, -0.3]],
-  [0.4, [0.02, -0.34, -0.42], [0, -0.6, -1], [-0.2, -1, 0.3]],
-  [0.56, [-0.24, -0.55, -0.22], [0.2, 0.2, -1], [0.2, -1, 0]]
+  [0.13, [-0.13, -0.07, -0.3], [0.15, 1, 0.25], [0.25, -0.05, -1]],
+  [0.2, [-0.15, -0.01, -0.25], [0.05, 0.9, -0.4], [0.15, -0.45, -1]],
+  [0.27, [-0.03, -0.02, -0.55], [0, 0.25, -1], [0, -1, -0.3]],
+  [0.4, [0.04, -0.25, -0.45], [0, -0.6, -1], [-0.2, -1, 0.3]],
+  [0.56, [-0.2, -0.5, -0.3], [0.2, 0.2, -1], [0.2, -1, 0]]
 ];
 const THROW_REL = 0.24, THROW_END = 0.74;
 const _thM = new THREE.Matrix4(), _thQa = new THREE.Quaternion(), _thQb = new THREE.Quaternion(), _thPa = new THREE.Vector3(), _thPb = new THREE.Vector3(), _thX = new THREE.Vector3(), _thY = new THREE.Vector3(), _thZ = new THREE.Vector3();
@@ -7152,7 +7153,7 @@ throwSkill = function (kind) {
   ARMS.thr = { t: 0, kind, done: false, start: new THREE.Matrix4().copy(vm.W.lh.matrixWorld) };
   sp.y.v -= 0.25; sp.rz.v -= 0.4; sp.rx.v -= 0.4;
   const tpl = PROPS[(PROJ_MDL[kind] || [])[0]];
-  if (tpl) { if (!ARMS.nade || ARMS.nade.userData.k !== kind) { if (ARMS.nade) gunScene.remove(ARMS.nade); ARMS.nade = tpl.clone(); ARMS.nade.userData.k = kind; ARMS.nade.scale.setScalar(1.15); gunScene.add(ARMS.nade); ARMS.nade.traverse(o => { if (o.isMesh) { o.castShadow = false; o.frustumCulled = false; } }); } ARMS.nade.visible = false; }
+  if (tpl) { if (!ARMS.nade || ARMS.nade.userData.k !== kind) { if (ARMS.nade) gunScene.remove(ARMS.nade); ARMS.nade = tpl.clone(); ARMS.nade.userData.k = kind; ARMS.nade.scale.setScalar(0.85); gunScene.add(ARMS.nade); ARMS.nade.traverse(o => { if (o.isMesh) { o.castShadow = false; o.frustumCulled = false; } }); } ARMS.nade.visible = false; }
   play('swap', 0.4, 1.3);
 };
 const _thT = new THREE.Matrix4(), _thP = new THREE.Vector3(), _thQ = new THREE.Quaternion(), _thS = new THREE.Vector3(1, 1, 1);
