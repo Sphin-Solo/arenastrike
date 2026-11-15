@@ -7485,7 +7485,7 @@ const beamGeo = new THREE.PlaneGeometry(1, 1); beamGeo.translate(0, 0.5, 0);
 const skyBeams = []; for (let i = 0; i < 2; i++) { const m = new THREE.Mesh(beamGeo, new THREE.MeshBasicMaterial({ map: T.radial, color: 0x9fd0ff, transparent: true, opacity: 0.07, blending: THREE.AdditiveBlending, depthWrite: false, fog: false, side: THREE.DoubleSide })); m.scale.set(9, 150, 1); skyLife.add(m); skyBeams.push({ m, a: i * 2.6 + 0.7, ph: i * 1.9 }); }
 const vmRim = new THREE.DirectionalLight(0x9fdcff, 0.32); vmRim.position.set(-2.2, 0.6, 1.4); gunScene.add(vmRim);
 const fireballs = []; for (let i = 0; i < 6; i++) { const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: T.radial, color: 0xffa040, transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false })); s.visible = false; scene.add(s); fireballs.push({ s, t: 0, R: 1 }); }
-const darkSmoke = []; for (let i = 0; i < 18; i++) { const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: T.radial, color: 0x16161a, transparent: true, opacity: 0, depthWrite: false })); s.visible = false; scene.add(s); darkSmoke.push({ s, t: 0, v: new THREE.Vector3(), sz: 1 }); }
+const darkSmoke = []; for (let i = 0; i < 18; i++) { const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: T.radial, color: 0x57524b, transparent: true, opacity: 0, depthWrite: false })); s.visible = false; scene.add(s); darkSmoke.push({ s, t: 0, v: new THREE.Vector3(), sz: 1 }); }
 const scorchMat = () => new THREE.MeshBasicMaterial({ color: 0x050505, map: T.radial, transparent: true, opacity: 0, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -3 });
 const scorches = []; for (let i = 0; i < 8; i++) { const m = new THREE.Mesh(new THREE.CircleGeometry(1, 20), scorchMat()); m.rotation.x = -Math.PI / 2; m.visible = false; scene.add(m); scorches.push({ m, t: 0 }); }
 let fbHead = 0, dsHead = 0, scHead = 0, emberT = 0;
@@ -7493,7 +7493,7 @@ function fxBoom(x, y, z, R, col) {
   for (let k = 0; k < 2; k++) { const f = fireballs[fbHead]; fbHead = (fbHead + 1) % fireballs.length; f.s.position.set(x + (Math.random() - 0.5) * R * 0.25 * k, y + 0.5 + k * 0.4, z + (Math.random() - 0.5) * R * 0.25 * k); f.t = 0.38 + k * 0.08; f.T = f.t; f.R = R * (k ? 0.7 : 1.15); f.s.material.color.setHex(k ? 0xfff0c0 : col); f.s.visible = true; }
   for (let k = 0; k < 6; k++) { const d = darkSmoke[dsHead]; dsHead = (dsHead + 1) % darkSmoke.length; const a = Math.random() * 6.28, r = Math.random() * R * 0.35; d.s.position.set(x + Math.cos(a) * r, y + 0.4 + Math.random() * 0.8, z + Math.sin(a) * r); d.v.set(Math.cos(a) * 0.8, 1.2 + Math.random() * 1.4, Math.sin(a) * 0.8); d.t = 2.2 + Math.random() * 0.8; d.T = d.t; d.sz = R * (0.35 + Math.random() * 0.3); d.s.visible = true; }
   const gy = groundAt(x, z);
-  if (y - gy < 2.5) { const s = scorches[scHead]; scHead = (scHead + 1) % scorches.length; s.m.position.set(x, gy + 0.015, z); s.m.scale.setScalar(R * 0.55); s.m.rotation.z = Math.random() * 6.28; s.t = 28; s.m.visible = true; }
+  if (y - gy < 2.5) { const s = scorches[scHead]; scHead = (scHead + 1) % scorches.length; s.m.position.set(x, gy + 0.04, z); s.m.scale.setScalar(R * 0.55); s.m.rotation.z = Math.random() * 6.28; s.t = 28; s.m.visible = true; }
 }
 const _blastFx1 = blastFx;
 blastFx = function (kind, x, y, z) { _blastFx1(kind, x, y, z); if (kind === 'rocket' || kind === 'gl') { try { fxBoom(x, y, z, kind === 'rocket' ? 5.5 : 4.2, kind === 'rocket' ? 0xff8a30 : 0xffb050); } catch (e) {} } };
@@ -7504,7 +7504,7 @@ function fxWorldUpdate(dt) {
     const m = shafts[k], pl = L && L[k];
     if (!pl || !pl.parent || pl.intensity <= 0 || pl.position.y < 2) { m.visible = false; continue; }
     const gy = 0, h = pl.position.y - gy - 0.02; m.visible = true; m.position.copy(pl.position); m.scale.set(h * 0.5, h, h * 0.5);
-    m.material.uniforms.col.value.copy(pl.color); m.material.uniforms.op.value = (audTheme() === 2 ? 0.2 : 0.13) * (0.94 + 0.06 * Math.sin(gameTime * 9 + k * 2.1));
+    m.material.uniforms.col.value.copy(pl.color); m.material.uniforms.op.value = (audTheme() === 2 ? 0.22 : 0.17) * (0.94 + 0.06 * Math.sin(gameTime * 9 + k * 2.1));
   }
   // sky traffic and searchlights (outdoor maps)
   const th = audTheme(), sky = th !== 2;
@@ -7518,7 +7518,7 @@ function fxWorldUpdate(dt) {
   if (th === 2 && state === 'play') { emberT -= dt; if (emberT <= 0) { emberT = 0.09; const a = Math.random() * 6.28, r = 2 + Math.random() * 13; emit(P.x + Math.cos(a) * r, 0.2 + Math.random() * 2.5, P.z + Math.sin(a) * r, 1, 0.5, 0.14, 1, 0.9, 3.2); } }
   // explosions
   for (const f of fireballs) { if (f.t <= 0) continue; f.t -= dt; const k = 1 - Math.max(0, f.t) / f.T; f.s.scale.setScalar(f.R * (0.35 + 1.4 * Math.sqrt(k))); f.s.material.opacity = Math.max(0, 1 - k * k) * 0.95; if (f.t <= 0) f.s.visible = false; }
-  for (const d of darkSmoke) { if (d.t <= 0) continue; d.t -= dt; const k = 1 - Math.max(0, d.t) / d.T; d.s.position.addScaledVector(d.v, dt); d.v.multiplyScalar(1 - dt * 0.9); d.s.scale.setScalar(d.sz * (0.6 + 2.2 * k)); d.s.material.opacity = Math.min(1, k * 8) * (1 - k) * 0.6; if (d.t <= 0) d.s.visible = false; }
+  for (const d of darkSmoke) { if (d.t <= 0) continue; d.t -= dt; const k = 1 - Math.max(0, d.t) / d.T; d.s.position.addScaledVector(d.v, dt); d.v.multiplyScalar(1 - dt * 0.9); d.s.scale.setScalar(d.sz * (0.6 + 2.2 * k)); d.s.material.opacity = Math.min(1, k * 8) * (1 - k) * 0.8; if (d.t <= 0) d.s.visible = false; }
   for (const s of scorches) { if (s.t <= 0) continue; s.t -= dt; s.m.material.opacity = Math.min(0.75, s.t * 0.15); if (s.t <= 0) s.m.visible = false; }
 }
 const _applyMap0 = applyMap;
@@ -7530,6 +7530,25 @@ applyMap = function (id) {
 // puddles: soft irregular edge (the alpha map needs luminance, not alpha) and a calmer highlight so bloom doesn't blow them out
 { const pt = tex(128, 128, (g, w, h) => { g.fillStyle = '#000'; g.fillRect(0, 0, w, h); for (let i = 0; i < 9; i++) { const a = i / 9 * 6.28, r = i ? 14 + Math.random() * 16 : 0, x = 64 + Math.cos(a) * r, y = 64 + Math.sin(a) * r, R = i ? 26 + Math.random() * 12 : 46; const gr = g.createRadialGradient(x, y, 0, x, y, R); gr.addColorStop(0, 'rgba(255,255,255,1)'); gr.addColorStop(0.7, 'rgba(255,255,255,.8)'); gr.addColorStop(1, 'rgba(255,255,255,0)'); g.fillStyle = gr; g.fillRect(0, 0, w, h); } });
   if (M.puddle) { M.puddle.alphaMap = pt; M.puddle.roughness = 0.1; M.puddle.opacity = 0.8; M.puddle.needsUpdate = true; } }
+
+// ---- more foley: bullet impacts with the odd ricochet, heartbeat when badly hurt ----
+let impSndT = 0, heartT = 0;
+const _impactFx0 = impactFx;
+impactFx = function (pt, normal, obj, small) {
+  _impactFx0(pt, normal, obj, small);
+  const now = performance.now();
+  if (!actx || actx.state !== 'running' || now - impSndT < 45) return; impSndT = now;
+  const d = Math.hypot(pt.x - P.x, pt.z - P.z), v = (small ? 0.05 : 0.09) / (1 + d * 0.09), dl = Math.min(0.12, d / 340);
+  noise(0.035, 2600 + Math.random() * 1800, 'bandpass', v * 1.3, dl, 1.4); noise(0.07, 260 + Math.random() * 120, 'lowpass', v * 1.6, dl, 0.8);
+  if (!small && d > 5 && Math.random() < 0.16) { const f = 2100 + Math.random() * 1500; tone('sine', f, f * (0.35 + Math.random() * 0.2), 0.32, v * 0.35, dl + 0.01); noise(0.25, f * 0.8, 'bandpass', v * 0.25, dl + 0.01, 9); }
+};
+function heartUpdate(dt) {
+  if (state !== 'play' || down || health > 35 || health <= 0 || !actx || actx.state !== 'running') { heartT = 0.2; return; }
+  heartT -= dt;
+  if (heartT <= 0) { const k = 1 - health / 35; heartT = 0.95 - k * 0.3; const v = 0.16 + k * 0.14; tone('sine', 62, 38, 0.13, v); noise(0.05, 90, 'lowpass', v * 0.6); tone('sine', 54, 34, 0.12, v * 0.7, 0.19); noise(0.05, 80, 'lowpass', v * 0.4, 0.19); }
+}
+const _updParticles1 = updateParticles;
+updateParticles = function (dt) { _updParticles1(dt); try { heartUpdate(dt); } catch (e) {} };
 
 
 
