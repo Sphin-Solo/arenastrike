@@ -384,6 +384,7 @@
     <kbd>Esc / P</kbd><span>Pause</span>
   </div>
   <label>Sensitivity <input id="sens" type="range" min="0.4" max="3" step="0.05" value="1"><span id="sensv">1.00</span></label>
+  <label>Glow &amp; film effects <input id="gfx" type="checkbox" checked style="flex:0 0 auto;width:18px;height:18px"></label>
   <div class="loadout"><div class="skl">LOADOUT</div>
     <div class="lrow"><b>1</b><span>PRIMARY · KV-4 CARBINE</span></div><div class="lrow"><b>2</b><span>SECONDARY · P-17 PISTOL</span></div><div class="lrow"><b>3</b><span>MELEE · KATANA</span></div>
     <small>Roll the weapon chest between rooms for 20 other firearms — primaries replace slot 1, sidearms slot 2.</small></div>
@@ -7192,6 +7193,68 @@ function throwTarget(W, dt) {
   }
   return _thT.compose(_thP, _thQ, _thS);
 }
+
+
+// ================= a3_fx: post-processing, atmosphere, audio space, enemy + viewmodel polish =================
+// ---- post: half-res bloom (2 mips), filmic grade, vignette. Falls back to the plain path if anything is unsupported or slow. ----
+const FX = { on: !isTouch, ok: false, user: true, slowT: 0, hurt: 0, w: 0, h: 0 };
+try { const g = localStorage.getItem('arena-gfx'); if (g === '0') FX.user = false; if (g === '1') { FX.user = true; FX.on = true; } } catch (e) {}
+const fxCam = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1), fxScene = new THREE.Scene();
+const fxQuad = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), null); fxQuad.frustumCulled = false; fxScene.add(fxQuad);
+const FX_VS = 'varying vec2 vUv; void main(){ vUv = uv; gl_Position = vec4(position.xy, 0.0, 1.0); }';
+function fxMat(fs, uniforms) { return new THREE.ShaderMaterial({ vertexShader: FX_VS, fragmentShader: 'precision highp float; varying vec2 vUv;\n' + fs, uniforms, depthTest: false, depthWrite: false, toneMapped: false }); }
+const fxBright = fxMat(`uniform sampler2D t; uniform vec2 px;
+  void main(){ vec3 c = (texture2D(t, vUv + px * vec2(-1.,-1.)).rgb + texture2D(t, vUv + px * vec2(1.,-1.)).rgb + texture2D(t, vUv + px * vec2(-1.,1.)).rgb + texture2D(t, vUv + px * vec2(1.,1.)).rgb) * 0.25;
+    float l = max(c.r, max(c.g, c.b)); float k = smoothstep(0.62, 0.95, l); gl_FragColor = vec4(c * k, 1.0); }`, { t: { value: null }, px: { value: new THREE.Vector2() } });
+const fxBlur = fxMat(`uniform sampler2D t; uniform vec2 d;
+  void main(){ vec3 c = texture2D(t, vUv).rgb * 0.227; c += (texture2D(t, vUv + d * 1.385).rgb + texture2D(t, vUv - d * 1.385).rgb) * 0.316; c += (texture2D(t, vUv + d * 3.231).rgb + texture2D(t, vUv - d * 3.231).rgb) * 0.070; gl_FragColor = vec4(c, 1.0); }`, { t: { value: null }, d: { value: new THREE.Vector2() } });
+const fxFinal = fxMat(`uniform sampler2D t, b1, b2; uniform float str, hurt, time, flash;
+  void main(){ vec3 c = texture2D(t, vUv).rgb; vec3 bl = texture2D(b1, vUv).rgb * 0.55 + texture2D(b2, vUv).rgb * 0.75;
+    c += bl * str;
+    c = c * (1.0 + c * 0.08) ;                                   // gentle highlight lift
+    float l = dot(c, vec3(0.299, 0.587, 0.114)); c = mix(vec3(l), c, 1.08);          // a touch more saturation
+    c = (c - 0.5) * 1.05 + 0.5;                                  // contrast
+    vec2 q = vUv - 0.5; float v = dot(q, q); c *= 1.0 - v * 0.55;                    // vignette
+    c = mix(c, vec3(0.75, 0.05, 0.04) * (0.35 + l), hurt * smoothstep(0.08, 0.5, v) * 0.75);
+    float n = fract(sin(dot(vUv * vec2(1920., 1080.) + time, vec2(12.9898, 78.233))) * 43758.5453); c += (n - 0.5) * 0.012;
+    gl_FragColor = vec4(c, 1.0); }`, { t: { value: null }, b1: { value: null }, b2: { value: null }, str: { value: 1 }, hurt: { value: 0 }, time: { value: 0 }, flash: { value: 0 } });
+let fxA = null, fxH = null, fxQa = null, fxQb = null, fxEa = null, fxEb = null;
+function fxAlloc() {
+  const sz = renderer.getDrawingBufferSize(new THREE.Vector2()), w = sz.x | 0, h = sz.y | 0;
+  if (w === FX.w && h === FX.h && fxA) return;
+  FX.w = w; FX.h = h;
+  for (const r of [fxA, fxH, fxQa, fxQb, fxEa, fxEb]) if (r) r.dispose();
+  const ms = renderer.capabilities.isWebGL2 && THREE.WebGLMultisampleRenderTarget;
+  fxA = ms ? new THREE.WebGLMultisampleRenderTarget(w, h, { format: THREE.RGBAFormat }) : new THREE.WebGLRenderTarget(w, h, { format: THREE.RGBAFormat });
+  if (ms) fxA.samples = 4;
+  fxA.texture.encoding = THREE.sRGBEncoding; fxA.texture.minFilter = fxA.texture.magFilter = THREE.LinearFilter; fxA.texture.generateMipmaps = false;
+  const mk = d => { const r = new THREE.WebGLRenderTarget(Math.max(2, w >> d), Math.max(2, h >> d), { depthBuffer: false, format: THREE.RGBAFormat }); r.texture.minFilter = r.texture.magFilter = THREE.LinearFilter; r.texture.generateMipmaps = false; return r; };
+  fxH = mk(1); fxQa = mk(2); fxQb = mk(2); fxEa = mk(3); fxEb = mk(3);
+}
+function fxPass(mat, target) { fxQuad.material = mat; renderer.setRenderTarget(target); renderer.render(fxScene, fxCam); }
+const _render0 = render;
+let fxT0 = 0;
+render = function () {
+  if (!FX.on || !FX.user) return _render0();
+  try {
+    fxAlloc();
+    renderer.setRenderTarget(fxA); renderer.clear(); renderer.render(scene, camera); renderer.clearDepth();
+    if (state !== 'start') renderer.render(gunScene, gunCam);
+    fxBright.uniforms.t.value = fxA.texture; fxBright.uniforms.px.value.set(0.5 / FX.w, 0.5 / FX.h); fxPass(fxBright, fxH);
+    fxBlur.uniforms.t.value = fxH.texture; fxBlur.uniforms.d.value.set(1 / fxQa.width, 0); fxPass(fxBlur, fxQa);
+    fxBlur.uniforms.t.value = fxQa.texture; fxBlur.uniforms.d.value.set(0, 1 / fxQa.height); fxPass(fxBlur, fxQb);
+    fxBlur.uniforms.t.value = fxQb.texture; fxBlur.uniforms.d.value.set(1 / fxEa.width, 0); fxPass(fxBlur, fxEa);
+    fxBlur.uniforms.t.value = fxEa.texture; fxBlur.uniforms.d.value.set(0, 1 / fxEa.height); fxPass(fxBlur, fxEb);
+    const u = fxFinal.uniforms; u.t.value = fxA.texture; u.b1.value = fxQb.texture; u.b2.value = fxEb.texture; u.time.value = (performance.now() * 0.001) % 100;
+    FX.hurt += ((state === 'play' ? Math.max(0, 1 - health / 45) : 0) - FX.hurt) * 0.08; u.hurt.value = FX.hurt;
+    fxPass(fxFinal, null);
+    FX.ok = true;
+    // auto fallback: sustained low frame rate turns the effect off before resolution is touched
+    const now = performance.now(), ft = now - fxT0; fxT0 = now;
+    if (state === 'play' && gameTime > 4 && ft < 250) { FX.slowT = ft > 23 ? FX.slowT + ft : Math.max(0, FX.slowT - ft * 0.5); if (FX.slowT > 2500 && !FX.forced) { FX.on = false; renderer.setRenderTarget(null); } }
+  } catch (e) { console.warn('fx', e); FX.on = false; renderer.setRenderTarget(null); _render0(); }
+};
+{ const cb = $('gfx'); if (cb) { cb.checked = FX.user && FX.on; cb.addEventListener('change', () => { FX.user = cb.checked; FX.on = cb.checked; FX.forced = cb.checked; FX.slowT = 0; try { localStorage.setItem('arena-gfx', cb.checked ? '1' : '0'); } catch (e) {} }); } }
 
 
 
