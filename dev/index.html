@@ -7080,7 +7080,7 @@ function solveArms(W) {
   curlHand('L', thT ? 'grip' : ARMS.free > 0.5 ? (melee ? 'open' : 'grip') : 'support', 0);
 }
 const _poseVM0 = poseVM;
-poseVM = function (dt, sprint) { _poseVM0(dt, sprint); vm._armDt = dt; try { if (ARMS.ok && vm.W) solveArms(vm.W); } catch (e) { console.warn('arms', e); ARMS.ok = false; if (ARMS.root) ARMS.root.visible = false; } };
+poseVM = function (dt, sprint) { _poseVM0(dt, sprint); vm._armDt = dt; try { if (typeof vmExtra === 'function' && vm.W) vmExtra(dt, vm.W); } catch (e) {} try { if (ARMS.ok && vm.W) solveArms(vm.W); } catch (e) { console.warn('arms', e); ARMS.ok = false; if (ARMS.root) ARMS.root.visible = false; } };
 async function loadArms() {
   if (typeof fetch !== 'function' || location.protocol === 'file:') return;
   try {
@@ -7449,6 +7449,26 @@ resetPose = function (e) {
 };
 async function loadEnemyGuns() { if (typeof fetch !== 'function' || location.protocol === 'file:') return; for (const id of EGUN) await loadProp(id, false); }
 setTimeout(loadEnemyGuns, 2500);
+
+// ---- viewmodel extras: living idle, roll into turns, muzzle lifts away from walls ----
+let vxWall = 0, vxLookZ = 0, vxWallT = 0, vxBlocked = false;
+function vmExtra(dt, W) {
+  const w = WD[cur]; if (!W || w.melee || down) return;
+  const hip = 1 - aimT, t = idle3, r = W.root;
+  r.rotation.x += (Math.sin(t * 0.73) * 0.004 + Math.sin(t * 1.31 + 1) * 0.002) * hip;
+  r.rotation.y += Math.sin(t * 0.51 + 2) * 0.005 * hip;
+  r.position.y += Math.sin(t * 0.9 + 0.5) * 0.0012 * hip;
+  vxLookZ += (Math.max(-0.07, Math.min(0.07, -lookDX * 0.0011)) - vxLookZ) * Math.min(1, dt * 9);
+  r.rotation.z += vxLookZ * (1 - aimT * 0.7);
+  vxWallT -= dt;
+  if (vxWallT <= 0) {
+    vxWallT = 0.05; const d = W.pistol ? 0.55 : 0.8, cp = Math.cos(pitch);
+    vxBlocked = Math.abs(pitch) < 0.9 && !vm.clip && insideSolid(P.x - Math.sin(yaw) * d * cp, P.y + 1.35 + Math.sin(pitch) * d, P.z - Math.cos(yaw) * d * cp);
+  }
+  vxWall += ((vxBlocked ? 1 : 0) - vxWall) * Math.min(1, dt * 9);
+  const k = vxWall * (1 - aimT * 0.6);
+  if (k > 0.01) { r.position.z += 0.09 * k; r.position.y -= 0.035 * k; r.position.x -= 0.02 * k; r.rotation.x += 0.55 * k; r.rotation.y += 0.3 * k; r.rotation.z -= 0.15 * k; }
+}
 
 
 
