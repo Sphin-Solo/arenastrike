@@ -7264,7 +7264,7 @@ render = function () {
     FX.ok = true;
     // auto fallback: sustained low frame rate turns the effect off before resolution is touched
     const now = performance.now(), ft = now - fxT0; fxT0 = now;
-    if (state === 'play' && gameTime > 4 && ft < 250) { FX.slowT = ft > 23 ? FX.slowT + ft : Math.max(0, FX.slowT - ft * 0.5); if (FX.slowT > 2500 && !FX.forced) { FX.on = false; renderer.setRenderTarget(null); } }
+    if (state === 'play' && gameTime > 4 && ft < 250) { FX.slowT = ft > 23 ? FX.slowT + ft : Math.max(0, FX.slowT - ft * 0.5); if (FX.slowT > 2500 && !FX.forced) { FX.on = false; renderer.setRenderTarget(null); const cb = $('gfx'); if (cb) cb.checked = false; } }
   } catch (e) { console.warn('fx', e); FX.on = false; try { renderer.setRenderTarget(null); } catch (e2) {} _render0(); }
 };
 { const cb = $('gfx'); if (cb) { cb.checked = FX.user && FX.on; cb.addEventListener('change', () => { FX.user = cb.checked; FX.on = cb.checked; FX.forced = cb.checked; FX.slowT = 0; try { localStorage.setItem('arena-gfx', cb.checked ? '1' : '0'); } catch (e) {} }); } }
