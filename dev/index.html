@@ -384,6 +384,7 @@
     <kbd>Esc / P</kbd><span>Pause</span>
   </div>
   <label>Sensitivity <input id="sens" type="range" min="0.4" max="3" step="0.05" value="1"><span id="sensv">1.00</span></label>
+  <label>Volume <input id="vol" type="range" min="0" max="1" step="0.05" value="1"><span id="volv">100%</span> <button id="mute" type="button" title="Mute (M)" style="flex:0 0 auto;margin-left:8px;padding:2px 10px;font:inherit;font-size:11px;letter-spacing:.08em;background:transparent;color:inherit;border:1px solid currentColor;border-radius:3px;cursor:pointer;opacity:.8">MUTE</button></label>
   <label>Glow &amp; film effects <input id="gfx" type="checkbox" checked style="flex:0 0 auto;width:18px;height:18px"></label>
   <div class="loadout"><div class="skl">LOADOUT</div>
     <div class="lrow"><b>1</b><span>PRIMARY · KV-4 CARBINE</span></div><div class="lrow"><b>2</b><span>SECONDARY · P-17 PISTOL</span></div><div class="lrow"><b>3</b><span>MELEE · KATANA</span></div>
@@ -7549,6 +7550,25 @@ function heartUpdate(dt) {
 }
 const _updParticles1 = updateParticles;
 updateParticles = function (dt) { _updParticles1(dt); try { heartUpdate(dt); } catch (e) {} };
+
+// ---- volume: menu slider + mute button, M toggles mute in game; remembered between visits ----
+const VOL = { v: 1, mute: false };
+try { const v = parseFloat(localStorage.getItem('arena-vol')); if (v >= 0 && v <= 1) VOL.v = v; VOL.mute = localStorage.getItem('arena-mute') === '1'; } catch (e) {}
+function volApply(save) {
+  const g = VOL.mute ? 0 : VOL.v * 0.6;
+  if (master && actx) { try { master.gain.setTargetAtTime(g, actx.currentTime, 0.03); } catch (e) { master.gain.value = g; } }
+  const sl = $('vol'), lb = $('volv'), bt = $('mute');
+  if (sl) sl.value = VOL.v; if (lb) lb.textContent = VOL.mute ? 'muted' : Math.round(VOL.v * 100) + '%';
+  if (bt) { bt.textContent = VOL.mute ? 'UNMUTE' : 'MUTE'; bt.style.opacity = VOL.mute ? 1 : 0.8; }
+  if (save) { try { localStorage.setItem('arena-vol', VOL.v); localStorage.setItem('arena-mute', VOL.mute ? '1' : '0'); } catch (e) {} }
+}
+{ const sl = $('vol'), bt = $('mute');
+  if (sl) sl.addEventListener('input', e => { VOL.v = parseFloat(e.target.value); if (VOL.v > 0) VOL.mute = false; volApply(true); });
+  if (bt) bt.addEventListener('click', e => { e.preventDefault(); e.stopPropagation(); VOL.mute = !VOL.mute; volApply(true); bt.blur(); });
+  addEventListener('keydown', e => { if (e.code === 'KeyM' && !e.repeat && !(e.target && /INPUT|TEXTAREA/.test(e.target.tagName) && e.target.type !== 'range')) { VOL.mute = !VOL.mute; volApply(true); } });
+  volApply(false); }
+const _initAudio0 = initAudio;
+initAudio = function () { const had = !!master; const r = _initAudio0.apply(this, arguments); if (master && !had) { master.gain.value = VOL.mute ? 0 : VOL.v * 0.6; } return r; };
 
 
 
